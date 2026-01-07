@@ -85,15 +85,8 @@ public class JsonData
         }
     }
 
-    public List<Patron> GetPopulatedPatrons(IEnumerable<Patron> patrons)
-    {
-        List<Patron> populated = new List<Patron>();
-        foreach (Patron patron in patrons)
-        {
-            populated.Add(GetPopulatedPatron(patron));
-        }
-        return populated;
-    }
+    public List<Patron> GetPopulatedPatrons(IEnumerable<Patron> patrons) =>
+        patrons.Select(GetPopulatedPatron).ToList();
 
     public Patron GetPopulatedPatron(Patron p)
     {
@@ -120,85 +113,46 @@ public class JsonData
 
     public Loan GetPopulatedLoan(Loan l)
     {
-        Loan populated = new Loan
+        return new Loan
         {
             Id = l.Id,
             BookItemId = l.BookItemId,
             PatronId = l.PatronId,
             LoanDate = l.LoanDate,
             DueDate = l.DueDate,
-            ReturnDate = l.ReturnDate
+            ReturnDate = l.ReturnDate,
+            BookItem = GetPopulatedBookItem(BookItems!.Single(bi => bi.Id == l.BookItemId)),
+            Patron = Patrons!.Single(p => p.Id == l.PatronId)
         };
-
-        foreach (BookItem bi in BookItems!)
-        {
-            if (bi.Id == l.BookItemId)
-            {
-                populated.BookItem = GetPopulatedBookItem(bi);
-                break;
-            }
-        }
-
-        foreach (Patron p in Patrons!)
-        {
-            if (p.Id == l.PatronId)
-            {
-                populated.Patron = p;
-                break;
-            }
-        }
-
-        return populated;
     }
 
     public BookItem GetPopulatedBookItem(BookItem bi)
     {
-        BookItem populated = new BookItem
+        return new BookItem
         {
             Id = bi.Id,
             BookId = bi.BookId,
             AcquisitionDate = bi.AcquisitionDate,
-            Condition = bi.Condition
+            Condition = bi.Condition,
+            Book = GetPopulatedBook(Books!.Single(b => b.Id == bi.BookId))
         };
-
-        foreach (Book b in Books!)
-        {
-            if (b.Id == bi.BookId)
-            {
-                populated.Book = GetPopulatedBook(b);
-                break;
-            }
-        }
-
-        return populated;
     }
 
     public Book GetPopulatedBook(Book b)
     {
-        Book populated = new Book
+        return new Book
         {
             Id = b.Id,
             Title = b.Title,
             AuthorId = b.AuthorId,
             Genre = b.Genre,
             ISBN = b.ISBN,
-            ImageName = b.ImageName
+            ImageName = b.ImageName,
+            Author = Authors!
+                .Where(a => a.Id == b.AuthorId)
+                .Select(a => new Author { Id = a.Id, Name = a.Name })
+                .First()
         };
-
-        foreach (Author a in Authors!)
-        {
-            if (a.Id == b.AuthorId)
-            {
-                populated.Author = new Author
-                {
-                    Id = a.Id,
-                    Name = a.Name
-                };
-                break;
-            }
-        }
-
-        return populated;
     }
 
     private async Task<T?> LoadJson<T>(string filePath)
