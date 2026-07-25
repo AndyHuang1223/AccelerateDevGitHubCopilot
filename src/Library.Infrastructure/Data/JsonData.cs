@@ -17,15 +17,17 @@ public class JsonData
     private readonly string _bookItemsPath;
     private readonly string _patronsPath;
     private readonly string _loansPath;
+    private readonly string _dataRootPath;
 
     public JsonData(IConfiguration configuration)
     {
         var section = configuration.GetSection("JsonPaths");
-        _authorsPath = section["Authors"] ?? Path.Combine("Json", "Authors.json");
-        _booksPath = section["Books"] ?? Path.Combine("Json", "Books.json");
-        _bookItemsPath = section["BookItems"] ?? Path.Combine("Json", "BookItems.json");
-        _patronsPath = section["Patrons"] ?? Path.Combine("Json", "Patrons.json");
-        _loansPath = section["Loans"] ?? Path.Combine("Json", "Loans.json");
+        _dataRootPath = AppContext.BaseDirectory;
+        _authorsPath = ResolveDataPath(section["Authors"], "Authors.json");
+        _booksPath = ResolveDataPath(section["Books"], "Books.json");
+        _bookItemsPath = ResolveDataPath(section["BookItems"], "BookItems.json");
+        _patronsPath = ResolveDataPath(section["Patrons"], "Patrons.json");
+        _loansPath = ResolveDataPath(section["Loans"], "Loans.json");
     }
 
     public async Task EnsureDataLoaded()
@@ -161,6 +163,18 @@ public class JsonData
         {
             return await JsonSerializer.DeserializeAsync<T>(jsonStream);
         }
+    }
+
+    private string ResolveDataPath(string? configuredPath, string defaultFileName)
+    {
+        var path = configuredPath ?? Path.Combine("Json", defaultFileName);
+
+        if (Path.IsPathRooted(path))
+        {
+            return path;
+        }
+
+        return Path.GetFullPath(path, _dataRootPath);
     }
 
 }
