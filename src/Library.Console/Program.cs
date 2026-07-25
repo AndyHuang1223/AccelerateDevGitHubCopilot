@@ -6,7 +6,8 @@ using Microsoft.Extensions.Configuration;
 var services = new ServiceCollection();
 
 var configuration = new ConfigurationBuilder()
-.SetBasePath(Directory.GetCurrentDirectory())
+// Resolve configuration relative to the compiled output directory.
+.SetBasePath(AppContext.BaseDirectory)
 .AddJsonFile("appSettings.json")
 .Build();
 
