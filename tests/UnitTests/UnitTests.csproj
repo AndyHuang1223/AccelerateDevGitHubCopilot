@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Library.ApplicationCore\Library.ApplicationCore.csproj" />
+    <ProjectReference Include="..\..\src\Library.Infrastructure\Library.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

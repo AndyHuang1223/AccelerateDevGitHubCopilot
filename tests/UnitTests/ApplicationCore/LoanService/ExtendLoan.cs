@@ -32,6 +32,7 @@ public class ExtendLoanTest
         // Assert
         Assert.Equal(LoanExtensionStatus.Success, extensionStatus);
         Assert.Equal(loanDueDate.AddDays(LoanService.ExtendByDays), loan.DueDate);
+        await _mockLoanRepository.Received(1).UpdateLoan(loan);
     }
 
     [Fact(DisplayName = "LoanService.ExtendLoan: Returns LoanNotFound if loan is not found")]
@@ -100,5 +101,22 @@ public class ExtendLoanTest
         // Assert
         Assert.Equal(LoanExtensionStatus.LoanExpired, extensionStatus);
         Assert.Equal(loanDueDate, loan.DueDate);
+    }
+
+    [Fact(DisplayName = "LoanService.ExtendLoan: Returns Error if saving the loan fails")]
+    public async Task ExtendLoan_ReturnsErrorWhenSaveFails()
+    {
+        // Arrange
+        var patron = PatronFactory.CreateCurrentPatron();
+        var loan = LoanFactory.CreateCurrentLoanForPatron(patron);
+        _mockLoanRepository.GetLoan(loan.Id).Returns(loan);
+        _mockLoanRepository.UpdateLoan(loan)
+            .Returns(Task.FromException(new InvalidOperationException("save failed")));
+
+        // Act
+        LoanExtensionStatus extensionStatus = await _loanService.ExtendLoan(loan.Id);
+
+        // Assert
+        Assert.Equal(LoanExtensionStatus.Error, extensionStatus);
     }
 }

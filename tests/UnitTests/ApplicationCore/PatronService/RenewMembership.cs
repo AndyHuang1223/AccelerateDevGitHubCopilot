@@ -31,6 +31,7 @@ public class RenewMembershipTest
         // Assert
         Assert.Equal(MembershipRenewalStatus.Success, renewalStatus);
         Assert.Equal(membershipEnd.AddYears(1), patron.MembershipEnd);
+        await _mockPatronRepository.Received(1).UpdatePatron(patron);
     }
 
     [Fact(DisplayName = "PatronService.RenewMembership: Renews the membership successfully with expired membership")]

@@ -61,6 +61,7 @@ public class ReturnLoanTest
         // Assert
         Assert.Equal(LoanReturnStatus.Success, returnStatus);
         Assert.NotNull(loan.ReturnDate);
+        await _mockLoanRepository.Received(1).UpdateLoan(loan);
     }
 
     [Fact(DisplayName = "LoanService.ReturnLoan: Returns Success and updates return date for an expired loan")]
@@ -95,5 +96,22 @@ public class ReturnLoanTest
         // Assert
         Assert.Equal(LoanReturnStatus.Success, returnStatus);
         Assert.NotNull(loan.ReturnDate);
+    }
+
+    [Fact(DisplayName = "LoanService.ReturnLoan: Returns Error if saving the loan fails")]
+    public async Task ReturnLoan_ReturnsErrorWhenSaveFails()
+    {
+        // Arrange
+        var patron = PatronFactory.CreateCurrentPatron();
+        var loan = LoanFactory.CreateCurrentLoanForPatron(patron);
+        _mockLoanRepository.GetLoan(loan.Id).Returns(loan);
+        _mockLoanRepository.UpdateLoan(loan)
+            .Returns(Task.FromException(new InvalidOperationException("save failed")));
+
+        // Act
+        LoanReturnStatus returnStatus = await _loanService.ReturnLoan(loan.Id);
+
+        // Assert
+        Assert.Equal(LoanReturnStatus.Error, returnStatus);
     }
 }

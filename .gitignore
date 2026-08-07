@@ -4,8 +4,8 @@
 ## Get latest from `dotnet new gitignore`
 
 # Custom
-
-Readme.md
+.library-data/
+.lab-reference/
 
 # dotenv files
 .env

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using Library.ApplicationCore.Entities;
 using Microsoft.Extensions.Configuration;
 
@@ -12,29 +13,79 @@ public class JsonData
     public List<Patron>? Patrons { get; set; }
     public List<Loan>? Loans { get; set; }
 
+    private readonly string _authorsSeedPath;
+    private readonly string _booksSeedPath;
+    private readonly string _bookItemsSeedPath;
+    private readonly string _patronsSeedPath;
+    private readonly string _loansSeedPath;
+
     private readonly string _authorsPath;
     private readonly string _booksPath;
     private readonly string _bookItemsPath;
     private readonly string _patronsPath;
     private readonly string _loansPath;
-    private readonly string _dataRootPath;
+    private readonly string _runtimeDataRootPath;
+    private readonly TimeSpan _dateOffset;
 
     public JsonData(IConfiguration configuration)
     {
-        var section = configuration.GetSection("JsonPaths");
-        _dataRootPath = AppContext.BaseDirectory;
-        _authorsPath = ResolveDataPath(section["Authors"], "Authors.json");
-        _booksPath = ResolveDataPath(section["Books"], "Books.json");
-        _bookItemsPath = ResolveDataPath(section["BookItems"], "BookItems.json");
-        _patronsPath = ResolveDataPath(section["Patrons"], "Patrons.json");
-        _loansPath = ResolveDataPath(section["Loans"], "Loans.json");
+        var paths = configuration.GetSection("JsonPaths");
+
+        _authorsSeedPath = ResolveSeedPath(paths["Authors"], "Authors.json");
+        _booksSeedPath = ResolveSeedPath(paths["Books"], "Books.json");
+        _bookItemsSeedPath = ResolveSeedPath(paths["BookItems"], "BookItems.json");
+        _patronsSeedPath = ResolveSeedPath(paths["Patrons"], "Patrons.json");
+        _loansSeedPath = ResolveSeedPath(paths["Loans"], "Loans.json");
+
+        var configuredRuntimeRoot = configuration["JsonData:RuntimeRoot"] ?? ".library-data";
+        _runtimeDataRootPath = Path.GetFullPath(configuredRuntimeRoot, Directory.GetCurrentDirectory());
+
+        var referenceDateText = configuration["JsonData:ReferenceDate"] ?? "2023-12-20";
+        var referenceDate = DateTime.ParseExact(
+            referenceDateText,
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None);
+        _dateOffset = DateTime.Today - referenceDate.Date;
+
+        _authorsPath = GetRuntimePath(_authorsSeedPath);
+        _booksPath = GetRuntimePath(_booksSeedPath);
+        _bookItemsPath = GetRuntimePath(_bookItemsSeedPath);
+        _patronsPath = GetRuntimePath(_patronsSeedPath);
+        _loansPath = GetRuntimePath(_loansSeedPath);
+    }
+
+    public string RuntimeDataRootPath => _runtimeDataRootPath;
+
+    public async Task InitializeAsync(bool resetData = false)
+    {
+        var runtimePaths = GetRuntimePaths();
+        var existingFiles = runtimePaths.Count(File.Exists);
+
+        if (resetData)
+        {
+            DeleteRuntimeFiles(runtimePaths);
+            await CreateRuntimeData();
+        }
+        else if (existingFiles == 0)
+        {
+            await CreateRuntimeData();
+        }
+        else if (existingFiles != runtimePaths.Count)
+        {
+            throw new InvalidOperationException(
+                $"Runtime data directory '{_runtimeDataRootPath}' is incomplete. " +
+                "Run with --reset-data to recreate the lab data.");
+        }
+
+        await LoadData();
     }
 
     public async Task EnsureDataLoaded()
     {
         if (Patrons == null)
         {
-            await LoadData();
+            await InitializeAsync();
         }
     }
 
@@ -77,14 +128,6 @@ public class JsonData
             MembershipEnd = p.MembershipEnd,
             ImageName = p.ImageName,
         }).ToList());
-    }
-
-    private async Task SaveJson<T>(string filePath, T data)
-    {
-        using (FileStream jsonStream = File.Create(filePath))
-        {
-            await JsonSerializer.SerializeAsync(jsonStream, data);
-        }
     }
 
     public List<Patron> GetPopulatedPatrons(IEnumerable<Patron> patrons) =>
@@ -157,15 +200,68 @@ public class JsonData
         };
     }
 
-    private async Task<T?> LoadJson<T>(string filePath)
+    private async Task CreateRuntimeData()
     {
-        using (FileStream jsonStream = File.OpenRead(filePath))
+        Directory.CreateDirectory(_runtimeDataRootPath);
+        var runtimePaths = GetRuntimePaths();
+
+        try
         {
-            return await JsonSerializer.DeserializeAsync<T>(jsonStream);
+            var authors = await LoadJson<List<Author>>(_authorsSeedPath);
+            var books = await LoadJson<List<Book>>(_booksSeedPath);
+            var bookItems = await LoadJson<List<BookItem>>(_bookItemsSeedPath);
+            var patrons = await LoadJson<List<Patron>>(_patronsSeedPath);
+            var loans = await LoadJson<List<Loan>>(_loansSeedPath);
+
+            foreach (var bookItem in bookItems)
+            {
+                bookItem.AcquisitionDate = Shift(bookItem.AcquisitionDate);
+            }
+
+            foreach (var patron in patrons)
+            {
+                patron.MembershipStart = Shift(patron.MembershipStart);
+                patron.MembershipEnd = Shift(patron.MembershipEnd);
+            }
+
+            foreach (var loan in loans)
+            {
+                loan.LoanDate = Shift(loan.LoanDate);
+                loan.DueDate = Shift(loan.DueDate);
+                loan.ReturnDate = Shift(loan.ReturnDate);
+            }
+
+            await SaveJson(_authorsPath, authors);
+            await SaveJson(_booksPath, books);
+            await SaveJson(_bookItemsPath, bookItems);
+            await SaveJson(_patronsPath, patrons);
+            await SaveJson(_loansPath, loans);
+        }
+        catch
+        {
+            DeleteRuntimeFiles(runtimePaths);
+            throw;
         }
     }
 
-    private string ResolveDataPath(string? configuredPath, string defaultFileName)
+    private DateTime Shift(DateTime value) => value + _dateOffset;
+
+    private DateTime? Shift(DateTime? value) => value.HasValue ? Shift(value.Value) : null;
+
+    private async Task<T> LoadJson<T>(string filePath)
+    {
+        await using FileStream jsonStream = File.OpenRead(filePath);
+        return await JsonSerializer.DeserializeAsync<T>(jsonStream)
+            ?? throw new InvalidOperationException($"JSON file '{filePath}' is empty or invalid.");
+    }
+
+    private async Task SaveJson<T>(string filePath, T data)
+    {
+        await using FileStream jsonStream = File.Create(filePath);
+        await JsonSerializer.SerializeAsync(jsonStream, data);
+    }
+
+    private string ResolveSeedPath(string? configuredPath, string defaultFileName)
     {
         var path = configuredPath ?? Path.Combine("Json", defaultFileName);
 
@@ -174,7 +270,23 @@ public class JsonData
             return path;
         }
 
-        return Path.GetFullPath(path, _dataRootPath);
+        return Path.GetFullPath(path, AppContext.BaseDirectory);
     }
 
+    private string GetRuntimePath(string seedPath) =>
+        Path.Combine(_runtimeDataRootPath, Path.GetFileName(seedPath));
+
+    private IReadOnlyList<string> GetRuntimePaths() =>
+        new[] { _authorsPath, _booksPath, _bookItemsPath, _patronsPath, _loansPath };
+
+    private static void DeleteRuntimeFiles(IEnumerable<string> runtimePaths)
+    {
+        foreach (var path in runtimePaths)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
 }
