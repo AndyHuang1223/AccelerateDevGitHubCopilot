@@ -27,7 +27,7 @@ public class ConsoleApp
 
     public async Task Run()
     {
-        while (true)
+        while (_currentState != ConsoleState.Quit)
         {
             switch (_currentState)
             {
