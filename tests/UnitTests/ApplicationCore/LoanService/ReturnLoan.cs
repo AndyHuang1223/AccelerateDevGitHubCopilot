@@ -8,12 +8,14 @@ namespace Library.UnitTests.ApplicationCore.LoanServiceTests;
 public class ReturnLoanTest
 {
     private readonly ILoanRepository _mockLoanRepository;
+    private readonly IPatronRepository _mockPatronRepository;
     private readonly LoanService _loanService;
 
     public ReturnLoanTest()
     {
         _mockLoanRepository = Substitute.For<ILoanRepository>();
-        _loanService = new LoanService(_mockLoanRepository);
+        _mockPatronRepository = Substitute.For<IPatronRepository>();
+        _loanService = new LoanService(_mockLoanRepository, _mockPatronRepository);
     }
 
     [Fact(DisplayName = "LoanService.ReturnLoan: Returns LoanNotFound if loan is not found")]

@@ -4,11 +4,69 @@ using Library.ApplicationCore.Enums;
 
 public class LoanService : ILoanService
 {
-    private ILoanRepository _loanRepository;
+    private readonly ILoanRepository _loanRepository;
+    private readonly IPatronRepository _patronRepository;
+    public const int LoanDurationDays = 14;
+    public const int MaxActiveLoans = 5;
 
-    public LoanService(ILoanRepository loanRepository)
+    public LoanService(ILoanRepository loanRepository, IPatronRepository patronRepository)
     {
         _loanRepository = loanRepository;
+        _patronRepository = patronRepository;
+    }
+
+    public async Task<LoanCreationStatus> CreateLoan(int patronId, int bookItemId)
+    {
+        var patron = await _patronRepository.GetPatron(patronId);
+        if (patron == null)
+        {
+            return LoanCreationStatus.PatronNotFound;
+        }
+
+        if (patron.MembershipEnd < DateTime.Now)
+        {
+            return LoanCreationStatus.MembershipExpired;
+        }
+
+        var activeLoanCount = patron.Loans.Count(loan => loan.ReturnDate == null);
+        if (activeLoanCount >= MaxActiveLoans)
+        {
+            return LoanCreationStatus.LoanLimitReached;
+        }
+
+        var bookItem = await _loanRepository.GetBookItem(bookItemId);
+        if (bookItem == null)
+        {
+            return LoanCreationStatus.BookItemNotFound;
+        }
+
+        var availableBookItems = await _loanRepository.GetAvailableBookItems();
+        if (!availableBookItems.Any(item => item.Id == bookItemId))
+        {
+            return LoanCreationStatus.BookItemUnavailable;
+        }
+
+        var loanDate = DateTime.Now;
+        var loan = new Loan
+        {
+            PatronId = patron.Id,
+            Patron = patron,
+            BookItemId = bookItem.Id,
+            BookItem = bookItem,
+            LoanDate = loanDate,
+            DueDate = loanDate.AddDays(LoanDurationDays),
+            ReturnDate = null
+        };
+
+        try
+        {
+            await _loanRepository.AddLoan(loan);
+            return LoanCreationStatus.Success;
+        }
+        catch (Exception)
+        {
+            return LoanCreationStatus.Error;
+        }
     }
 
     public async Task<LoanReturnStatus> ReturnLoan(int loanId)

@@ -8,12 +8,14 @@ namespace Library.UnitTests.ApplicationCore.LoanServiceTests;
 public class ExtendLoanTest
 {
     private readonly ILoanRepository _mockLoanRepository;
+    private readonly IPatronRepository _mockPatronRepository;
     private readonly LoanService _loanService;
 
     public ExtendLoanTest()
     {
         _mockLoanRepository = Substitute.For<ILoanRepository>();
-        _loanService = new LoanService(_mockLoanRepository);
+        _mockPatronRepository = Substitute.For<IPatronRepository>();
+        _loanService = new LoanService(_mockLoanRepository, _mockPatronRepository);
     }
 
     [Fact(DisplayName = "LoanService.ExtendLoan: Extends the loan successfully")]
@@ -73,7 +75,7 @@ public class ExtendLoanTest
         // Arrange
         var patron = PatronFactory.CreateCurrentPatron();
         var loan = LoanFactory.CreateReturnedLoanForPatron(patron);
-        var loanId = loan.Id; 
+        var loanId = loan.Id;
         var loanDueDate = loan.DueDate;
         _mockLoanRepository.GetLoan(loanId).Returns(loan);
 
@@ -91,7 +93,7 @@ public class ExtendLoanTest
         // Arrange
         var patron = PatronFactory.CreateCurrentPatron();
         var loan = LoanFactory.CreateExpiredLoanForPatron(patron);
-        var loanId = loan.Id; 
+        var loanId = loan.Id;
         var loanDueDate = loan.DueDate;
         _mockLoanRepository.GetLoan(loanId).Returns(loan);
 

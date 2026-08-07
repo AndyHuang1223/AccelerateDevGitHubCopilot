@@ -40,6 +40,9 @@ public class ConsoleApp
                 case ConsoleState.PatronDetails:
                     _currentState = await PatronDetails();
                     break;
+                case ConsoleState.BorrowBook:
+                    _currentState = await BorrowBook();
+                    break;
                 case ConsoleState.LoanDetails:
                     _currentState = await LoanDetails();
                     break;
@@ -136,6 +139,7 @@ public class ConsoleApp
             {
                 "q" when options.HasFlag(CommonActions.Quit) => CommonActions.Quit,
                 "s" when options.HasFlag(CommonActions.SearchPatrons) => CommonActions.SearchPatrons,
+                "b" when options.HasFlag(CommonActions.BorrowBook) => CommonActions.BorrowBook,
                 "m" when options.HasFlag(CommonActions.RenewPatronMembership) => CommonActions.RenewPatronMembership,
                 "e" when options.HasFlag(CommonActions.ExtendLoanedBook) => CommonActions.ExtendLoanedBook,
                 "r" when options.HasFlag(CommonActions.ReturnLoanedBook) => CommonActions.ReturnLoanedBook,
@@ -166,6 +170,10 @@ public class ConsoleApp
         {
             Console.WriteLine(" - \"m\" to extend patron's membership");
         }
+        if (options.HasFlag(CommonActions.BorrowBook))
+        {
+            Console.WriteLine(" - \"b\" to borrow a book");
+        }
         if (options.HasFlag(CommonActions.SearchPatrons))
         {
             Console.WriteLine(" - \"s\" for new search");
@@ -182,25 +190,27 @@ public class ConsoleApp
 
     async Task<ConsoleState> PatronDetails()
     {
-        Console.WriteLine($"Name: {selectedPatronDetails.Name}");
-        Console.WriteLine($"Membership Expiration: {selectedPatronDetails.MembershipEnd}");
+        var patronDetails = selectedPatronDetails ?? throw new InvalidOperationException("No patron selected.");
+
+        Console.WriteLine($"Name: {patronDetails.Name}");
+        Console.WriteLine($"Membership Expiration: {patronDetails.MembershipEnd}");
         Console.WriteLine();
         Console.WriteLine("Book Loans:");
         int loanNumber = 1;
-        foreach (Loan loan in selectedPatronDetails.Loans)
+        foreach (Loan loan in patronDetails.Loans)
         {
             Console.WriteLine($"{loanNumber}) {loan.BookItem!.Book!.Title} - Due: {loan.DueDate} - Returned: {(loan.ReturnDate != null).ToString()}");
             loanNumber++;
         }
 
-        CommonActions options = CommonActions.SearchPatrons | CommonActions.Quit | CommonActions.Select | CommonActions.RenewPatronMembership;
+        CommonActions options = CommonActions.SearchPatrons | CommonActions.Quit | CommonActions.Select | CommonActions.RenewPatronMembership | CommonActions.BorrowBook;
         CommonActions action = ReadInputOptions(options, out int selectedLoanNumber);
         if (action == CommonActions.Select)
         {
-            if (selectedLoanNumber >= 1 && selectedLoanNumber <= selectedPatronDetails.Loans.Count())
+            if (selectedLoanNumber >= 1 && selectedLoanNumber <= patronDetails.Loans.Count())
             {
-                var selectedLoan = selectedPatronDetails.Loans.ElementAt(selectedLoanNumber - 1);
-                selectedLoanDetails = selectedPatronDetails.Loans.Where(l => l.Id == selectedLoan.Id).Single();
+                var selectedLoan = patronDetails.Loans.ElementAt(selectedLoanNumber - 1);
+                selectedLoanDetails = patronDetails.Loans.Where(l => l.Id == selectedLoan.Id).Single();
                 return ConsoleState.LoanDetails;
             }
             else
@@ -219,18 +229,79 @@ public class ConsoleApp
         }
         else if (action == CommonActions.RenewPatronMembership)
         {
-            var status = await _patronService.RenewMembership(selectedPatronDetails.Id);
+            var status = await _patronService.RenewMembership(patronDetails.Id);
             Console.WriteLine(EnumHelper.GetDescription(status));
             // reloading after renewing membership
-            selectedPatronDetails = (await _patronRepository.GetPatron(selectedPatronDetails.Id))!;
+            selectedPatronDetails = (await _patronRepository.GetPatron(patronDetails.Id))!;
             return ConsoleState.PatronDetails;
+        }
+        else if (action == CommonActions.BorrowBook)
+        {
+            return ConsoleState.BorrowBook;
         }
 
         throw new InvalidOperationException("An input option is not handled.");
     }
 
+    async Task<ConsoleState> BorrowBook()
+    {
+        var patronDetails = selectedPatronDetails ?? throw new InvalidOperationException("No patron selected.");
+        var availableBookItems = await _loanRepository.GetAvailableBookItems();
+        if (availableBookItems.Count == 0)
+        {
+            Console.WriteLine("No book items are currently available for loan.");
+            return ConsoleState.PatronDetails;
+        }
+
+        Console.WriteLine("Available Book Items:");
+        PrintBookItemsList(availableBookItems);
+
+        CommonActions options = CommonActions.SearchPatrons | CommonActions.Quit | CommonActions.Select;
+        CommonActions action = ReadInputOptions(options, out int selectedBookItemNumber);
+
+        if (action == CommonActions.Select)
+        {
+            if (selectedBookItemNumber >= 1 && selectedBookItemNumber <= availableBookItems.Count)
+            {
+                var selectedBookItem = availableBookItems.ElementAt(selectedBookItemNumber - 1);
+                var status = await _loanService.CreateLoan(patronDetails.Id, selectedBookItem.Id);
+                Console.WriteLine(EnumHelper.GetDescription(status));
+
+                selectedPatronDetails = (await _patronRepository.GetPatron(patronDetails.Id))!;
+                return ConsoleState.PatronDetails;
+            }
+
+            Console.WriteLine("Invalid book item number. Please try again.");
+            return ConsoleState.BorrowBook;
+        }
+
+        if (action == CommonActions.Quit)
+        {
+            return ConsoleState.Quit;
+        }
+
+        if (action == CommonActions.SearchPatrons)
+        {
+            return ConsoleState.PatronSearch;
+        }
+
+        throw new InvalidOperationException("An input option is not handled.");
+    }
+
+    static void PrintBookItemsList(List<BookItem> availableBookItems)
+    {
+        var bookItemNumber = 1;
+        foreach (var bookItem in availableBookItems)
+        {
+            Console.WriteLine($"{bookItemNumber}) [{bookItem.Id}] {bookItem.Book!.Title} by {bookItem.Book!.Author!.Name}");
+            bookItemNumber++;
+        }
+    }
+
     async Task<ConsoleState> LoanDetails()
     {
+        var patronDetails = selectedPatronDetails ?? throw new InvalidOperationException("No patron selected.");
+
         Console.WriteLine($"Book title: {selectedLoanDetails.BookItem!.Book!.Title}");
         Console.WriteLine($"Book Author: {selectedLoanDetails.BookItem!.Book!.Author!.Name}");
         Console.WriteLine($"Due date: {selectedLoanDetails.DueDate}");
@@ -246,7 +317,7 @@ public class ConsoleApp
             Console.WriteLine(EnumHelper.GetDescription(status));
 
             // reload loan after extending
-            selectedPatronDetails = (await _patronRepository.GetPatron(selectedPatronDetails.Id))!;
+            selectedPatronDetails = (await _patronRepository.GetPatron(patronDetails.Id))!;
             selectedLoanDetails = (await _loanRepository.GetLoan(selectedLoanDetails.Id))!;
             return ConsoleState.LoanDetails;
         }
@@ -257,7 +328,7 @@ public class ConsoleApp
             Console.WriteLine(EnumHelper.GetDescription(status));
             _currentState = ConsoleState.LoanDetails;
             // reload loan after returning
-            selectedLoanDetails = await _loanRepository.GetLoan(selectedLoanDetails.Id);
+            selectedLoanDetails = (await _loanRepository.GetLoan(selectedLoanDetails.Id))!;
             return ConsoleState.LoanDetails;
         }
         else if (action == CommonActions.Quit)
