@@ -22,6 +22,9 @@ public enum LoanCreationStatus
   [Description("Cannot create book loan because the patron already has 5 active loans.")]
   LoanLimitReached,
 
+  [Description("Cannot create book loan because the patron has an overdue loan.")]
+  PatronHasOverdueLoan,
+
   [Description("Cannot create book loan due to an error.")]
   Error
 }

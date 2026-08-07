@@ -34,6 +34,11 @@ public class LoanService : ILoanService
             return LoanCreationStatus.LoanLimitReached;
         }
 
+        if (patron.Loans.Any(loan => loan.ReturnDate == null && loan.DueDate < DateTime.Now))
+        {
+            return LoanCreationStatus.PatronHasOverdueLoan;
+        }
+
         var bookItem = await _loanRepository.GetBookItem(bookItemId);
         if (bookItem == null)
         {

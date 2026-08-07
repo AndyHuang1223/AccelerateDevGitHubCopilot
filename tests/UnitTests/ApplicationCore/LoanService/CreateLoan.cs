@@ -100,6 +100,69 @@ public class CreateLoanTest
     await _mockLoanRepository.DidNotReceive().AddLoan(Arg.Any<Loan>());
   }
 
+  [Fact(DisplayName = "LoanService.CreateLoan: Returns PatronHasOverdueLoan when patron has an active overdue loan")]
+  public async Task CreateLoan_ReturnsPatronHasOverdueLoanWhenPatronHasActiveOverdueLoan()
+  {
+    var patron = PatronFactory.CreateCurrentPatronWithLoans(1);
+    patron.Loans.Add(LoanFactory.CreateExpiredLoanForPatron(patron));
+    var originalLoans = patron.Loans.ToList();
+    _mockPatronRepository.GetPatron(patron.Id).Returns(patron);
+
+    var status = await _loanService.CreateLoan(patron.Id, 100);
+
+    Assert.Equal(LoanCreationStatus.PatronHasOverdueLoan, status);
+    Assert.Equal(originalLoans.Count, patron.Loans.Count);
+    Assert.All(originalLoans, loan => Assert.Contains(loan, patron.Loans));
+    await _mockLoanRepository.DidNotReceive().GetBookItem(Arg.Any<int>());
+    await _mockLoanRepository.DidNotReceive().GetAvailableBookItems();
+    await _mockLoanRepository.DidNotReceive().AddLoan(Arg.Any<Loan>());
+  }
+
+  [Fact(DisplayName = "LoanService.CreateLoan: Allows borrowing when overdue loan has been returned")]
+  public async Task CreateLoan_AllowsBorrowingWhenOverdueLoanHasBeenReturned()
+  {
+    var patron = PatronFactory.CreateCurrentPatronWithLoans(0);
+    var returnedOverdueLoan = LoanFactory.CreateExpiredLoanForPatron(patron);
+    returnedOverdueLoan.ReturnDate = DateTime.Now.AddDays(-1);
+    patron.Loans.Add(returnedOverdueLoan);
+    var bookItem = new BookItem { Id = 100 };
+    Loan? createdLoan = null;
+
+    _mockPatronRepository.GetPatron(patron.Id).Returns(patron);
+    _mockLoanRepository.GetBookItem(bookItem.Id).Returns(bookItem);
+    _mockLoanRepository.GetAvailableBookItems().Returns(new List<BookItem> { bookItem });
+    _mockLoanRepository
+        .When(repository => repository.AddLoan(Arg.Any<Loan>()))
+        .Do(callInfo => createdLoan = callInfo.Arg<Loan>());
+
+    var status = await _loanService.CreateLoan(patron.Id, bookItem.Id);
+
+    Assert.Equal(LoanCreationStatus.Success, status);
+    Assert.NotNull(createdLoan);
+    await _mockLoanRepository.Received(1).AddLoan(Arg.Any<Loan>());
+  }
+
+  [Fact(DisplayName = "LoanService.CreateLoan: Allows borrowing when current loans are not overdue")]
+  public async Task CreateLoan_AllowsBorrowingWhenCurrentLoansAreNotOverdue()
+  {
+    var patron = PatronFactory.CreateCurrentPatronWithLoans(1);
+    var bookItem = new BookItem { Id = 100 };
+    Loan? createdLoan = null;
+
+    _mockPatronRepository.GetPatron(patron.Id).Returns(patron);
+    _mockLoanRepository.GetBookItem(bookItem.Id).Returns(bookItem);
+    _mockLoanRepository.GetAvailableBookItems().Returns(new List<BookItem> { bookItem });
+    _mockLoanRepository
+        .When(repository => repository.AddLoan(Arg.Any<Loan>()))
+        .Do(callInfo => createdLoan = callInfo.Arg<Loan>());
+
+    var status = await _loanService.CreateLoan(patron.Id, bookItem.Id);
+
+    Assert.Equal(LoanCreationStatus.Success, status);
+    Assert.NotNull(createdLoan);
+    await _mockLoanRepository.Received(1).AddLoan(Arg.Any<Loan>());
+  }
+
   [Fact(DisplayName = "LoanService.CreateLoan: Ignores returned loans when checking the active-loan limit")]
   public async Task CreateLoan_IgnoresReturnedLoansWhenCheckingActiveLoanLimit()
   {
