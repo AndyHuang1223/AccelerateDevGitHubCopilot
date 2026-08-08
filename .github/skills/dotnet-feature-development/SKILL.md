@@ -15,12 +15,12 @@ Use this workflow for changes that cross the Library ApplicationCore, Infrastruc
 
 ## Workflow
 
-1. Read the relevant code, tests, and documentation before proposing changes. Use the architecture guidance in architecture.md to identify the correct layer.
+1. Read the relevant code, tests, and documentation before proposing changes. Use [architecture guidance](./architecture.md) to identify the correct layer.
 2. Convert the request into explicit acceptance criteria. Identify decisions that are not established by the repository or request; do not silently invent them.
 3. Produce a small implementation plan with the affected files before editing.
 4. Put business rules in ApplicationCore, persistence mechanics in Infrastructure, and input/output or flow coordination in Console.
 5. Reuse existing entities, services, interfaces, enums, repository patterns, and test factories whenever possible.
-6. Add tests for success, rejection, boundary, and no-side-effect paths. Follow the repository testing guidance in testing.md.
+6. Add tests for success, rejection, boundary, and no-side-effect paths. Follow [testing guidance](./testing.md).
 7. Run dotnet build, dotnet test, and git diff --check before reporting completion. Report only commands and results that were actually observed.
 8. If code and requirements conflict, stop and show the evidence, options, risks, and decision needed.
 

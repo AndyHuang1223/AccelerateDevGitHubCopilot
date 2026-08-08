@@ -1,3 +1,9 @@
+---
+name: repository-development-guidelines
+description: Repository-wide C# and .NET development conventions
+applyTo: "**"
+---
+
 # Repository Development Guidelines
 
 This is a .NET 8 C# library management console application.
