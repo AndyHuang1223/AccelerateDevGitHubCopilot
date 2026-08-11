@@ -47,7 +47,7 @@ Plugin             將多種 customization 打包、安裝與分享
 
 Instructions 會自動套用；Prompt Files 由使用者明確呼叫；Skills 依相關性自動載入或用 slash command 明確載入；Custom Agent 定義角色與工具；Language Model 決定推理能力；MCP 提供外部能力；Hooks 執行可預期的命令；Plugin 是發佈與安裝的包裝層。參考 [VS Code customization concepts](https://code.visualstudio.com/docs/agents/concepts/customization)。
 
-本 Lab 的主線 instruction 是根目錄 AGENTS.md。.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent、Hook 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
+本 Lab 的主線 instruction 是根目錄 AGENTS.md；.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent、Hook 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
 
 ## 前置需求
 
