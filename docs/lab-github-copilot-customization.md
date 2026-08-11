@@ -544,6 +544,61 @@ Instructions、Prompt File、Skill 已被發現；MCP 可以稍後加入，Revie
 .github/agents/library-code-reviewer.agent.md
 ~~~
 
+### 使用 /create-agent 產生初稿
+
+這個流程要在 **Agent mode** 的新 Chat session 執行。`/create-agent` 會先詢問
+Agent 的角色與工具，再產生 `.agent.md` 初稿；如果目前版本沒有顯示這個 slash
+command，改用 `Chat: New Custom Agent`，並把下列提示詞貼到建立畫面或下一則訊息。
+官方流程參考：[Custom agents](https://code.visualstudio.com/docs/agent-customization/custom-agents)。
+
+1. 在 Chat 的 mode picker 選 **Agent**。
+2. 輸入 `/create-agent`。
+3. 選擇 Workspace scope，名稱填入 `Library Code Reviewer`。
+4. 當 Copilot 詢問角色、工具與輸出格式時，貼上以下完整提示詞：
+
+~~~text
+請為目前這個 .NET 8 C# Library Management Console repository
+建立一個 Workspace Custom Agent，名稱是 Library Code Reviewer。
+
+請將檔案儲存到：
+.github/agents/library-code-reviewer.agent.md
+
+這個 Agent 是唯讀 reviewer，只能使用：
+- read
+- search
+- microsoftLearn/*
+
+不得使用：
+- edit
+- create
+- delete
+- format
+- execute
+- terminal 或其他寫入工具
+
+請檢查：
+1. 使用者需求與 acceptance criteria
+2. ApplicationCore、Infrastructure、Console 分層
+3. success、rejection、boundary、no-side-effect tests
+4. unrelated files、public API、NuGet、seed data 與 partial updates
+5. 實際 dotnet build、dotnet test、git diff --check 證據
+
+看不到命令輸出時必須標記 UNVERIFIED，不得推測成功。
+使用 Microsoft Learn 時，輸出官方文件標題與連結。
+
+Reviewer 必須輸出：
+- 簡短 verdict
+- severity、file evidence、violated rule/criterion、recommendation、blocking status 的 findings table
+- verification evidence and UNVERIFIED items
+- non-blocking follow-up
+
+請建立 .agent.md frontmatter 與 Markdown body。
+這次只建立 Custom Agent 檔案，不要修改任何 source、test 或 documentation。
+~~~
+
+5. 完成建立後，開啟 `.github/agents/library-code-reviewer.agent.md`，確認產生的
+   frontmatter 與下方 canonical 版本一致；Copilot 產生的文字若有變異，請手動修正。
+
 固定 frontmatter：
 
 ~~~yaml
