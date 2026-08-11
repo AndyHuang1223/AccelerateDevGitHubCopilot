@@ -34,7 +34,7 @@ Custom Agent  定義「角色、工具邊界與輸出格式」
 整合實作與唯讀 Review
 ~~~
 
-本 Lab 只使用 VS Code Agent customization，不加入 Prompt Files、Hooks、自製 MCP Server、資料庫或新的 NuGet package。VS Code 的 file-based instruction 使用 .instructions.md 檔案；本 Lab 以 applyTo: "**" 示範整個 Repository 都自動套用的規則。若沒有 applyTo，檔案不會自動套用，仍可能透過語意匹配被載入。[VS Code custom instructions 官方說明](https://code.visualstudio.com/docs/agent-customization/custom-instructions)
+本 Lab 只使用 VS Code Agent customization，不加入 Prompt Files、Hooks、自製 MCP Server、資料庫或新的 NuGet package。本 Lab 使用官方的 .github/copilot-instructions.md 作為 workspace-wide Always-on instruction；.instructions.md 與 applyTo 只作為延伸概念，不是本 Lab Part 3 的必要格式。[VS Code custom instructions 官方說明](https://code.visualstudio.com/docs/agent-customization/custom-instructions)
 
 ## 前置需求
 
@@ -171,7 +171,7 @@ dotnet run --project src/Library.Console/Library.Console.csproj -- --reset-data
 
 先確認以下檔案尚未建立：
 
-- .github/instructions/repository-development-guidelines.instructions.md
+- .github/copilot-instructions.md
 - .github/skills/dotnet-feature-development/SKILL.md
 - .github/agents/library-code-reviewer.agent.md
 - .vscode/mcp.json
@@ -224,48 +224,59 @@ git diff --stat
 
 ---
 
-## Part 3：建立 Repository Instructions（0:30–0:50）
+## Part 3：建立通用 Always-on Repository Instruction（0:30–0:50）
 
 ### 前置條件
 
 - Part 2 工作樹乾淨。
-- 已開啟 VS Code Chat，能使用 /create-instruction 或手動建立檔案。
+- 已開啟 VS Code Chat，並使用 GitHub Copilot Agent harness。
+- VS Code 開啟的是 Repository root。
 
 ### 操作步驟
 
 建立目錄：
 
 ~~~bash
-mkdir -p .github/instructions
+mkdir -p .github
 ~~~
 
-在 Chat 執行 /create-instruction，提供下列 Prompt 產生初稿：
+主要流程使用 VS Code 的 Agent Customizations editor：
 
-~~~text
-請為目前這個 .NET 8 C# Library Management Console repository 建立
-repository-wide file-based instruction。規則要涵蓋 ApplicationCore、
-Infrastructure、Console 的責任、最小修改、既有 xUnit/NSubstitute 測試慣例、
-不修改 seed data、dotnet build/test/diff-check 驗證，以及不得捏造命令結果。
-請輸出適合儲存為 .github/instructions/repository-development-guidelines.instructions.md
-的 Markdown，並包含正確 YAML frontmatter。
-~~~
+1. 執行 Chat: Open Customizations。
+2. 開啟 Instructions 頁籤。
+3. 選擇 New Instruction → Workspace。
+4. 若使用 slash command，依目前 VS Code 版本使用 /create-instruction 或 /create-instructions；產生後仍要確認檔案儲存在 Workspace 的 .github/copilot-instructions.md。
 
 將產生的檔案保存為：
 
-.github/instructions/repository-development-guidelines.instructions.md
+.github/copilot-instructions.md
 
-再把檔案修正為以下 canonical 版本：
+使用下列 Prompt 產生或整理初稿：
+
+~~~text
+請為目前這個 .NET 8 C# Library Management Console repository 建立
+workspace-wide Copilot instruction。除了 ApplicationCore、Infrastructure、
+Console 的架構與測試規則，也要規範 Copilot 回答解釋、分析、規劃與實作問題時：
+先讀取相關檔案、列出實際證據、區分觀察事實與推論、只分析時不要修改檔案、
+規劃時先列 acceptance criteria 與影響範圍、不得捏造命令或文件來源。
+請將結果儲存為 .github/copilot-instructions.md。
+~~~
+
+再把檔案修正為以下 canonical 版本。這個檔案不需要 YAML frontmatter：
 
 ~~~markdown
----
-name: repository-development-guidelines
-description: Repository-wide C# and .NET development conventions
-applyTo: "**"
----
-
-# Repository Development Guidelines
+# Repository and Copilot Guidelines
 
 This is a .NET 8 C# library management console application.
+
+## How to answer repository questions
+
+- Read the relevant source files, tests, and documentation before answering; do not guess the repository structure.
+- Cite the actual file paths, types, methods, tests, or command output used as evidence.
+- Separate observed facts, reasonable inferences, and information that has not been verified.
+- When the user asks only for explanation or analysis, do not modify files.
+- When the user asks for a plan, first state acceptance criteria, affected areas, expected files, risks, and unresolved decisions.
+- Never invent test results, command output, tool calls, or documentation sources.
 
 ## Architecture
 
@@ -291,27 +302,28 @@ This is a .NET 8 C# library management console application.
 - Never claim a command succeeded unless its output was actually observed.
 ~~~
 
-### 驗證 instruction 是否載入
+### 驗證 Always-on instruction
 
-1. 儲存檔案後重新開啟 Chat，或執行 VS Code 的 customization diagnostics。
-2. 使用會讀取 C# 檔案、但不應修改程式的 Prompt：
+1. 儲存檔案後重新開啟 Chat。
+2. 執行 Chat: Configure Instructions，確認 .github/copilot-instructions.md 出現在 Workspace scope。
+3. 在 Chat 視窗右鍵執行 Diagnostics，確認檔案已載入且沒有 error。
+4. 使用以下通用驗證 Prompt：
 
    ~~~text
-   請閱讀目前的 LoanService.cs 與相關測試，摘要這個 repository 的分層責任。
-   只分析，不修改檔案；請列出你實際參考的檔案。
+   請分析目前 LoanService 的責任、相關測試與資料流。
+   請列出你實際讀取的檔案，區分觀察事實與推論。
+   只分析，不要修改任何檔案。
    ~~~
 
-3. 在 response 的 References／引用資訊中確認 .github/instructions/repository-development-guidelines.instructions.md。
-4. 若看不到 References，使用 diagnostics 檢查 syntax、路徑與 workspace root，再重新開啟 Chat。
-
-applyTo: "**" 是本 Lab 選定的 Repository-wide 示範。若日後只想套用 C# 檔案，可以改為 **/*.cs,**/*.csproj；本次不要改變範圍，以便所有學員比較相同結果。
+5. 檢查回答是否列出實際檔案、區分事實與推論，且沒有修改工作樹。
+6. References 的呈現依 Chat UI 版本而異，不把 References 視為唯一驗收證據；以 Configure Instructions 與 Diagnostics 為主要證據。
 
 ### 預期結果與檢查點
 
-- [ ] 檔案位於 .github/instructions/，副檔名是 .instructions.md。
-- [ ] frontmatter 含 name、description、applyTo: "**"。
-- [ ] 內容沒有單一逾期需求的完整解法。
-- [ ] References 或 diagnostics 能證明 instruction 已載入。
+- [ ] 檔案是 Workspace scope 的 .github/copilot-instructions.md。
+- [ ] Chat: Configure Instructions 能看到該檔案。
+- [ ] Diagnostics 顯示已載入且沒有 error。
+- [ ] 通用驗證 Prompt 的回答有檔案證據、事實／推論區分，且沒有修改檔案。
 
 ---
 
@@ -321,6 +333,17 @@ applyTo: "**" 是本 Lab 選定的 Repository-wide 示範。若日後只想套�
 
 - Part 3 的 instruction 已儲存且可被發現。
 - 目前工作樹可以包含 instruction，但不要開始實作逾期功能。
+- 使用 GitHub Copilot Agent harness，而不是其他 agent harness。
+- 確認 VS Code settings：
+
+  ~~~json
+  {
+    "chat.useAgentSkills": true,
+    "chat.agentSkillsLocations": {
+      ".github/skills": true
+    }
+  }
+  ~~~
 
 ### 建立 Skill
 
@@ -330,7 +353,14 @@ applyTo: "**" 是本 Lab 選定的 Repository-wide 示範。若日後只想套�
 mkdir -p .github/skills/dotnet-feature-development
 ~~~
 
-在 Chat 執行 /create-skill，使用下列 Prompt 產生初稿：
+主要流程使用 VS Code 的 Agent Customizations editor：
+
+1. 執行 Chat: Open Customizations。
+2. 開啟 Skills 頁籤。
+3. 選擇 New Skill → Workspace。
+4. 輸入 dotnet-feature-development，確認建立在 .github/skills/。
+
+也可以在 Chat 執行 /create-skill，使用下列 Prompt 產生初稿；產生後仍要確認檔案位於 Workspace，而不是 User scope：
 
 ~~~text
 請為目前的 .NET Library Management repository 建立名為
@@ -353,6 +383,8 @@ description: >
   adding or changing services, business rules, repositories, Console
   flows, or related tests.
 argument-hint: "[feature or change to implement]"
+user-invocable: true
+disable-model-invocation: false
 ---
 
 # .NET Feature Development
@@ -431,8 +463,8 @@ Do not treat a generated test summary or an agent statement as proof unless the 
 
 ### 預期結果與 trigger 實驗
 
-1. 儲存三個檔案，執行 /skills 或 customization diagnostics。
-2. 確認 dotnet-feature-development 被發現，description 能涵蓋 Service、Repository、Console 與測試修改。
+1. 儲存三個檔案，在 Chat 執行 /skills 開啟 Configure Skills。
+2. 在 Skills 頁籤確認 dotnet-feature-development 出現在 Workspace scope；這是 Skill 發現的必要驗收。
 3. 使用新的 Chat session 完成以下三個實驗。前兩個只要求分析，不得修改程式：
 
    **實驗 A：一般 Repository 問題**
@@ -451,21 +483,24 @@ Do not treat a generated test summary or an agent statement as proof unless the 
    只提出 acceptance criteria 與檔案計畫，不要修改檔案。
    ~~~
 
-   預期：觀察 description 是否自動載入 Skill，以及回答是否提到兩個 resource。
+   預期：觀察 description 是否自動載入 Skill，以及回答是否提到兩個 resource。自動載入是觀察結果，不是必要通過條件。
 
    **實驗 C：明確觸發**
 
-   在 Chat 輸入 /dotnet-feature-development，再貼上實驗 B 的需求。預期 Skill 明確被載入。
+   在 Chat 輸入 /dotnet-feature-development，再貼上實驗 B 的需求。這是本 Part 的穩定觸發驗收，預期 Skill 明確被載入。
 
-4. 將三次結果記錄在觀察表：是否載入、是否列 plan、是否修改檔案、是否引用 architecture.md／testing.md。
+4. 使用 customization diagnostics 檢查 Skill 是否有格式或 discovery error。
+5. 將三次結果記錄在觀察表：是否載入、是否列 plan、是否修改檔案、是否引用 architecture.md／testing.md。
 
-若自動觸發不穩定，保留實驗 B 的結果，使用 slash command 完成實驗 C；不要為了觸發 Skill 提前修改功能。
+注意：/skills 是開啟 Configure Skills，不等於 Skill 已在目前 request 中執行。若實驗 B 沒有自動載入，保留觀察結果，使用 slash command 完成實驗 C；不要為了觸發 Skill 提前修改功能。
 
 ### 預期結果與檢查點
 
 - [ ] SKILL.md 的 name 與資料夾名稱相同。
+- [ ] Skill 出現在 Workspace Skills 清單。
+- [ ] chat.useAgentSkills 已啟用，且 .github/skills 位於 chat.agentSkillsLocations。
 - [ ] SKILL.md 實際包含 ./architecture.md 與 ./testing.md 兩個相對 Markdown links。
-- [ ] /skills 或 diagnostics 能發現 Skill。
+- [ ] Diagnostics 沒有 Skill discovery error。
 - [ ] 實驗 A、B 沒有修改程式；實驗 C 能明確載入 Skill。
 
 ---
@@ -644,7 +679,7 @@ Reviewer 看不到測試輸出時必須標記 UNVERIFIED，不能由工作樹或
 
 ### 前置條件與工作順序
 
-1. 開一個新的 Chat session，確認 response References 會載入 Repository Instruction。
+1. 開一個新的 Chat session，確認 Chat: Configure Instructions 與 Diagnostics 都能看到 .github/copilot-instructions.md。
 2. 使用一般 Agent 進行實作，不要一開始就用唯讀 Reviewer。
 3. 讓 dotnet-feature-development 自動載入，或先輸入 /dotnet-feature-development 明確載入。
 4. MCP 僅用來查證框架層建議；不要因為 TimeProvider 擴大本次修改。
@@ -833,18 +868,23 @@ git push -u origin lab/copilot-customization
 
 ### 看不到 Instruction
 
-- 確認檔案是 .github/instructions/repository-development-guidelines.instructions.md，副檔名不是 .md.txt。
-- 確認 YAML frontmatter 的 name、description 與 applyTo: "**" 格式正確。
-- 重新開啟 Chat workspace，或執行 customization diagnostics。
-- 確認使用的是 Chat／Agent request，而不是 inline completion。
-- 在 diagnostics 與 response References 中查看實際載入狀態。
+- 確認檔案是 Workspace root 的 .github/copilot-instructions.md，不是 User scope 或其他 repository。
+- 使用 Chat: Configure Instructions 確認檔案出現在 Workspace scope。
+- 執行 Chat 視窗右鍵的 Diagnostics，檢查是否有 path、permission 或 parsing error。
+- 確認使用的是 Chat／Agent request，而不是 inline completion；官方說明指出 inline suggestions 不會套用 custom instructions。
+- 重新開啟 Chat workspace 或執行 Developer: Reload Window。
+- References 的呈現依 Chat UI 版本而異，以 Configure Instructions 與 Diagnostics 為主要證據。
 
 ### 看不到 Skill
 
 - 確認檔名是 SKILL.md，且位於 .github/skills/dotnet-feature-development/。
 - 確認 name 只有小寫字母、數字與連字號，且與資料夾名稱相同。
+- 確認建立時選的是 Workspace，不是 User。
+- 確認 chat.useAgentSkills 為 true，且 chat.agentSkillsLocations 包含 .github/skills。
 - 確認 SKILL.md 的 ./architecture.md 與 ./testing.md links 指向同一資料夾。
-- 執行 /skills 或 customization diagnostics；先用 /dotnet-feature-development 明確觸發。
+- 執行 Chat: Open Customizations → Skills 確認 Skill 出現在 Workspace 清單。
+- /skills 只會開啟 Configure Skills；要驗證實際載入，請使用 /dotnet-feature-development 明確觸發。
+- 若仍看不到，執行 diagnostics，並確認目前選的是 GitHub Copilot Agent harness。
 
 ### MCP 無法啟動
 
