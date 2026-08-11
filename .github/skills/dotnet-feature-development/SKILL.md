@@ -7,6 +7,8 @@ description: >
   adding or changing services, business rules, repositories, Console
   flows, or related tests.
 argument-hint: "[feature or change to implement]"
+user-invocable: true
+disable-model-invocation: false
 ---
 
 # .NET Feature Development
