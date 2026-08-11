@@ -2,7 +2,7 @@
 
 ## 使用 VS Code Agent Customizations 延伸既有 .NET 專案
 
-本 Lab 接續 Library Management Repository 的 Create Loan 完成版。你會用同一個 repository，逐步建立可分享的規則、流程、角色、模型、外部工具與安全護欄，最後完成「逾期且未歸還則禁止新增借閱」功能。
+本 Lab 接續 Library Management Repository 的 Create Loan 完成版。你會用同一個 repository，逐步建立可分享的規則、流程、角色與外部工具，最後完成「逾期且未歸還則禁止新增借閱」功能。
 
 本文件是學生操作手冊。每個 Part 都包含前置條件、操作步驟、Prompt／檔案範本、預期結果與檢查點。模型輸出可以不同，但必須以責任邊界、工具權限與實際驗證證據為準。
 
@@ -15,11 +15,8 @@
 1. 使用 Chat: Open Customizations 管理 User／Workspace customization。
 2. 用 /init 建立通用 AGENTS.md，讓 Agent 回答與實作遵循 repository 慣例。
 3. 用 Prompt File、Agent Skill 與 Custom Agent 封裝可重複任務。
-4. 根據任務選擇 Language Model、thinking effort 與 tool-calling 能力。
-5. 使用 Microsoft Learn MCP 取得 repository 之外的官方證據。
-6. 使用安全的 Hook 觀察 agent lifecycle，理解 deterministic guardrail。
-7. 讀懂 Plugin manifest，理解如何打包並分享 Skills、Agents、Hooks 與 MCP。
-8. 用相同需求比較沒有 customization 與完整 customization 的差異。
+4. 使用 Microsoft Learn MCP 取得 repository 之外的官方證據。
+5. 用相同需求比較沒有 customization 與完整 customization 的差異。
 
 ## 課堂主線
 
@@ -34,20 +31,14 @@ Agent Skill        封裝可重複的多步驟開發流程
         ↓
 Custom Agent       限定角色、工具與輸出格式
         ↓
-Language Model     依任務選擇模型與 thinking effort
-        ↓
 MCP                取得 Repository 之外的工具與知識
-        ↓
-Hooks              在 agent lifecycle 執行 deterministic guardrail
-        ↓
-Plugin             將多種 customization 打包、安裝與分享
         ↓
 整合實作與 Review
 ~~~
 
-Instructions 會自動套用；Prompt Files 由使用者明確呼叫；Skills 依相關性自動載入或用 slash command 明確載入；Custom Agent 定義角色與工具；Language Model 決定推理能力；MCP 提供外部能力；Hooks 執行可預期的命令；Plugin 是發佈與安裝的包裝層。參考 [VS Code customization concepts](https://code.visualstudio.com/docs/agents/concepts/customization)。
+Instructions 會自動套用；Prompt Files 由使用者明確呼叫；Skills 依相關性自動載入或用 slash command 明確載入；Custom Agent 定義角色與工具；MCP 提供外部能力。Language Model、Hooks 與 Plugins 本次不列入實作範圍。參考 [VS Code customization concepts](https://code.visualstudio.com/docs/agents/concepts/customization)。
 
-本 Lab 的主線 instruction 是根目錄 AGENTS.md；.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent、Hook 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
+本 Lab 的主線 instruction 是根目錄 AGENTS.md；.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
 
 ## 前置需求
 
@@ -65,7 +56,7 @@ dotnet --version
 code --version
 ~~~
 
-Hooks 與 Plugins 目前是 Preview；模型清單、MCP policy、Hooks policy 與 Plugins policy 可能依帳號、組織和 VS Code 版本不同。環境限制必須保留錯誤證據，不得假裝成功。
+本 Lab 不實作 Language Model、Hooks 與 Plugins；若想延伸，請另開短實驗。MCP policy 可能依帳號、組織和 VS Code 版本不同；環境限制必須保留錯誤證據，不得假裝成功。
 
 ---
 
@@ -108,7 +99,7 @@ git status --short
 1. 確認開啟 repository root，不是 src 或 tests 子目錄。
 2. 開啟 Chat，選取 GitHub Copilot Agent harness。
 3. 執行 Chat: Open Customizations。
-4. 查看 Instructions、Skills、Agents、Prompts、Hooks 與 Plugins 頁籤。
+4. 查看 Instructions、Skills、Agents 與 Prompts 頁籤。
 5. 在 New 選單比較 User 與 Workspace scope；本 Lab 的檔案都選 Workspace。
 6. 執行 Developer: Open Agent Debug Panel，確認能看到目前 workspace 的 discovery log。
 
@@ -117,7 +108,7 @@ git status --short
 - [ ] 目前分支是 lab/copilot-customization。
 - [ ] git status --short 沒有輸出。
 - [ ] Customizations editor 能開啟，且已確認 Agent harness 與 Workspace scope。
-- [ ] 尚未建立 AGENTS.md、.github/prompts、.github/skills、.github/agents、.github/hooks 或 .vscode/mcp.json。
+- [ ] 尚未建立 AGENTS.md、.github/prompts、.github/skills、.github/agents 或 .vscode/mcp.json。
 
 ---
 
@@ -176,12 +167,11 @@ dotnet run --project src/Library.Console/Library.Console.csproj -- --reset-data
 - .github/prompts/overdue-loan-review.prompt.md
 - .github/skills/dotnet-feature-development/SKILL.md
 - .github/agents/library-code-reviewer.agent.md
-- .github/hooks/library-lab-session.json
 - .vscode/mcp.json
 
 ### 操作步驟與固定 Prompt
 
-開啟新的 Chat，選一般 Agent，貼上以下 Prompt。Part 10 會使用完全相同文字：
+開啟新的 Chat，選一般 Agent，貼上以下 Prompt。Part 8 會使用完全相同文字：
 
 ~~~text
 在建立借閱時，如果讀者有逾期且尚未歸還的借閱，必須拒絕新的借閱。
@@ -655,40 +645,7 @@ git diff --stat
 
 ---
 
-## Part 7：Language Model——選擇適合的模型（1:40–1:50）
-
-### 前置條件
-
-Chat model picker 可見，不需要 BYOK，也不要在 repository 儲存 API key。
-
-### 操作步驟
-
-1. 開啟 Chat model picker，記錄目前可用模型。
-2. 選擇 Auto，執行 Part 3 的 repository analysis Prompt。
-3. 選擇一個可用的快速模型，執行相同 Prompt。
-4. 選擇一個支援 thinking effort 的推理模型，執行相同 Prompt。
-5. 執行 Chat: Manage Language Models，查看 capabilities、context size、billing 與 visibility。
-6. 若模型支援，調整 thinking effort；Agent 實作模型必須支援 tool calling。
-7. 記錄實際帳號可用的模型名稱，不把固定模型名稱寫進教材答案。
-
-| 實驗 | 模型／effort | 是否支援 tools | 延遲 | 品質 | AI credit／policy 備註 |
-|---|---|---|---|---|---|
-| Auto | | | | | |
-| 快速模型 | | | | | |
-| 推理模型 | | | | | |
-
-模型選擇是 runtime decision，不是 Instructions、Skill 或 Agent 的替代品。官方說明：[AI language models in VS Code](https://code.visualstudio.com/docs/agent-customization/language-models)。
-
-### 預期結果與檢查點
-
-- [ ] 已用相同 Prompt 比較至少兩種可用模型或 Auto。
-- [ ] 已記錄 tool-calling、thinking effort、延遲與品質觀察。
-- [ ] 沒有設定或提交秘密。
-- [ ] 模型或組織 policy 限制已被明確記錄。
-
----
-
-## Part 8：Microsoft Learn MCP——取得外部官方證據（1:50–2:05）
+## Part 7：Microsoft Learn MCP——取得外部官方證據（1:40–1:55）
 
 ### 前置條件
 
@@ -742,71 +699,7 @@ mkdir -p .vscode
 
 ---
 
-## Part 9：Hooks 與 Plugins（2:05–2:20）
-
-### 操作步驟
-
-### A. Hooks：安全的 lifecycle 觀察
-
-Agent Hooks 目前是 Preview。使用 Chat: Configure Hooks、/create-hook 或 Customizations editor 建立 Workspace hook：
-
-~~~text
-建立一個只在 SessionStart 顯示訊息的 Library Lab hook。
-它只能回傳 JSON systemMessage，不得編輯、刪除、格式化、migration 或寫入任何資料。
-請將檔案儲存到 .github/hooks/library-lab-session.json。
-~~~
-
-非破壞性範本；macOS／Linux 與 Windows 命令依平台選用：
-
-~~~json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "type": "command",
-        "command": "printf '{\"systemMessage\":\"Library Lab hook loaded\"}'",
-        "windows": "powershell -NoProfile -Command \"Write-Output '{\\\"systemMessage\\\":\\\"Library Lab hook loaded\\\"}'\"",
-        "timeout": 10
-      }
-    ]
-  }
-}
-~~~
-
-重新開啟 Chat，查看 Agent Debug Logs 與 Output 的 GitHub Copilot Chat Hooks channel。記錄 hook input／output、exit code、policy 限制與是否執行。不要把 Hook 改成 formatter、migration、刪檔或資料寫入命令。官方說明：[Agent Hooks](https://code.visualstudio.com/docs/agent-customization/hooks)。
-
-### B. Plugins：只檢視 manifest，不安裝外部來源
-
-在 Customizations editor 的 Plugins 頁籤查看 marketplace、啟用／停用與 trust 流程。不安裝外部 Plugin；先檢查 chat.plugins.enabled 是否受 organization policy 控制。
-
-教材提供 docs/examples/library-ai-workflow-plugin/plugin.json 作為不會自動載入的示範 manifest：
-
-~~~json
-{
-  "name": "library-ai-workflow",
-  "description": "Example bundle for the Library Management AI workflow",
-  "version": "0.1.0",
-  "author": { "name": "Build School" },
-  "skills": "skills/",
-  "agents": "agents/",
-  "hooks": "hooks.json",
-  "mcpServers": ".mcp.json"
-}
-~~~
-
-這是放在 docs/examples 的教學 manifest，不會被 VS Code 當作 workspace plugin 自動載入。Plugin 可以打包 slash commands、Skills、Agents、Hooks 與 MCP；安裝前必須檢查 publisher、hooks、MCP commands 與權限。官方說明：[Agent Plugins](https://code.visualstudio.com/docs/agent-customization/agent-plugins)。
-
-### 預期結果與檢查點
-
-- [ ] Hook 只顯示非破壞性訊息，且能在 logs 中觀察。
-- [ ] Hook 不包含 destructive command。
-- [ ] 已知道 Hook 的 Preview、JSON、exit code 與 policy 限制。
-- [ ] Plugin manifest 是有效 JSON，且沒有被安裝或自動載入。
-- [ ] 能說明 Plugin 與 Skill／Agent／MCP／Hook 的包裝關係。
-
----
-
-## Part 10：整合實作——逾期禁止新增借閱（2:20–2:50）
+## Part 8：整合實作——逾期禁止新增借閱（1:55–2:35）
 
 ### 前置條件與工作順序
 
@@ -876,11 +769,11 @@ Agent Hooks 目前是 Preview。使用 Chat: Configure Hooks、/create-hook 或 
 
 ---
 
-## Part 11：手動驗證、回顧與交付（2:50–3:00）
+## Part 9：手動驗證、回顧與交付（2:35–3:00）
 
 ### 前置條件
 
-Part 10 的程式實作、測試與唯讀 Review 已完成；你知道 runtime data path，且每個手動案例都可以重新 reset。
+Part 8 的程式實作、測試與唯讀 Review 已完成；你知道 runtime data path，且每個手動案例都可以重新 reset。
 
 ### 操作步驟
 
@@ -914,7 +807,6 @@ dotnet run --project src/Library.Console/Library.Console.csproj -- --reset-data
 | 可重複流程 | | |
 | Reviewer 可追溯性 | | |
 | MCP 官方來源 | | |
-| Model／Hook／Plugin 限制 | | |
 
 ### Decision matrix
 
@@ -924,10 +816,7 @@ dotnet run --project src/Library.Console/Library.Console.csproj -- --reset-data
 | 手動重複呼叫的一段任務描述 | Prompt File |
 | 多步驟能力、資源與 scripts | Agent Skill |
 | 專門角色、工具權限與輸出格式 | Custom Agent |
-| 回答品質、速度、thinking effort | Language Model |
 | Repository 之外的文件、API、資料或動作 | MCP |
-| Agent lifecycle 的 deterministic command | Hook |
-| 將多種 customization 打包分享 | Plugin |
 
 ### 最終驗證與交付
 
@@ -958,7 +847,7 @@ git push -u origin lab/copilot-customization
 ### 完成條件
 
 - [ ] 37 baseline tests 未回歸，solution tests 全部通過。
-- [ ] 九種 customization 都能被發現、執行或完成概念驗收。
+- [ ] 六種本 Lab 的 customization 都能被發現、執行或完成概念驗收。
 - [ ] Preview／policy 限制有實際錯誤或未完成紀錄。
 - [ ] Reviewer 前後工作樹不變。
 - [ ] 四個手動案例、runtime JSON、Before／After 表與 review 報告完成。
@@ -991,31 +880,12 @@ git push -u origin lab/copilot-customization
 - /skills 只是 Configure Skills；用 /dotnet-feature-development 驗證實際觸發。
 - Prompt File 是手動 slash command；自動語意觸發不是必要驗收。
 
-### Language Model 不可用
-
-- Restricted Mode、Copilot plan 或 organization policy 可能只顯示 Auto。
-- Agent model 必須支援 tool calling。
-- 不要為了課堂擅自加入 API key；記錄 policy 限制即可。
-
 ### MCP 無法啟動
 
 - 執行 MCP: List Servers，查看 microsoftLearn server output。
 - 確認 URL 是 https://learn.microsoft.com/api/mcp，沒有秘密欄位。
 - 重新確認 trust，並檢查 organization MCP policy。
 - 可以閱讀官方文件完成概念，但必須標記「未完成 MCP 實驗」。
-
-### Hook 無法執行
-
-- Hook 必須位於 .github/hooks/*.json。
-- 查看 GitHub Copilot Chat Hooks Output channel 與 Agent Debug Logs。
-- 確認 command 會輸出合法 JSON，且沒有 destructive side effect。
-- Hooks 為 Preview；組織停用時保留錯誤證據。
-
-### Plugin 不出現
-
-- 本 Lab 的 docs/examples/.../plugin.json 只是 manifest 範例，不會自動安裝。
-- 外部 Plugin 可能需要 chat.plugins.enabled 與 marketplace trust。
-- 不要為了課堂安裝未知來源；檢查 publisher、hooks、MCP commands 與權限。
 
 ### Reviewer 修改了檔案
 
