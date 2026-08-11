@@ -383,6 +383,67 @@ AGENTS.md 與 Prompt File 已完成，尚未開始逾期功能實作。
 └── testing.md
 ~~~
 
+### 使用 /create-skill 產生初稿
+
+在新的 Chat 輸入 `/create-skill`。如果 slash command 先開啟產生流程，請在下一則訊息貼上以下提示詞：
+
+~~~text
+請為目前這個 .NET 8 C# Library Management Console repository
+建立一個 Workspace Agent Skill。
+
+Skill 名稱必須是：
+dotnet-feature-development
+
+請將 Skill 儲存到：
+.github/skills/dotnet-feature-development/
+
+這個 Skill 用於新增或修改：
+- Library.ApplicationCore 的 business rules、entities、services、enums
+- Library.Infrastructure 的 repositories 與 JSON persistence
+- Library.Console 的 input/output 與 flow coordination
+- UnitTests 中的 xUnit、NSubstitute 與 Factory-based tests
+
+請建立以下檔案：
+- SKILL.md
+- architecture.md
+- testing.md
+
+SKILL.md 的 frontmatter 必須包含：
+- name: dotnet-feature-development
+- 能匹配 .NET Library feature、Service、Repository、Console 與 tests 的 description
+- argument-hint: "[feature or change to implement]"
+- user-invocable: true
+- disable-model-invocation: false
+
+Skill 流程必須是：
+1. 先閱讀 source、tests、docs 與現有 patterns。
+2. 列出 acceptance criteria、影響範圍與尚未確認的決策。
+3. 在修改前提出最小 file-level implementation plan。
+4. 將 business rules 放在 ApplicationCore。
+5. 將 persistence 放在 Infrastructure。
+6. 將互動與流程控制放在 Console。
+7. 沿用既有 entities、services、interfaces、enums、repositories 與 factories。
+8. 補上 success、rejection、boundary 與 no-side-effect tests。
+9. 執行並觀察 dotnet build、dotnet test、git diff --check。
+10. 沒有實際命令輸出時，不得宣稱驗證成功。
+
+SKILL.md 必須用相對 Markdown links 參考：
+- ./architecture.md
+- ./testing.md
+
+architecture.md 請描述各 project 的責任與 Console → Infrastructure → ApplicationCore 依賴方向。
+testing.md 請描述 xUnit、NSubstitute、PatronFactory、LoanFactory、Received(1)、DidNotReceive() 與測試命令。
+
+請加入限制：
+- 優先採用最小修改。
+- 不新增 NuGet package、資料庫、Web API 或無關重構。
+- 不任意修改 public interface、seed data 或既有行為。
+- 如果需求與現有程式碼衝突，先列出證據與需要決定的選項。
+- 這次只建立 Skill 檔案，不要實作 overdue borrowing 功能。
+~~~
+
+產生流程詢問儲存位置時，選擇 `Workspace`；詢問名稱時使用 `dotnet-feature-development`。`/create-skill` 是 AI 輔助產生初稿，完成後仍要依下方 canonical frontmatter、流程與相對連結人工檢查，不要直接把模型輸出視為驗收結果。
+
 SKILL.md frontmatter：
 
 ~~~yaml
