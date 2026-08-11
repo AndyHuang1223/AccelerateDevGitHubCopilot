@@ -14,8 +14,8 @@
 
 1. 使用 Chat: Open Customizations 管理 User／Workspace customization。
 2. 用 /init 建立通用 AGENTS.md，讓 Agent 回答與實作遵循 repository 慣例。
-3. 用 Prompt File、Agent Skill 與 Custom Agent 封裝可重複任務。
-4. 使用 Microsoft Learn MCP 取得 repository 之外的官方證據。
+3. 建立可套用到不同需求的 Feature Plan、Test Gap 與 Review Prompt File。
+4. 用 Agent Skill、Custom Agent 與選修 MCP 延伸多步驟流程、角色權限與外部證據。
 5. 用相同需求比較沒有 customization 與完整 customization 的差異。
 
 ## 課堂主線
@@ -25,9 +25,9 @@ Create and Manage  管理位置、scope、發現與診斷
         ↓
 AGENTS.md          定義所有工作都適用的通則
         ↓
-Prompt File        將明確、手動的任務變成 slash command
+Prompt Files       將可重複的單一任務變成 slash command
         ↓
-Agent Skill        封裝可重複的多步驟開發流程
+Agent Skill        封裝包含資源的多步驟開發流程
         ↓
 Custom Agent       限定角色、工具與輸出格式
         ↓
@@ -38,7 +38,16 @@ MCP                取得 Repository 之外的工具與知識
 
 Instructions 會自動套用；Prompt Files 由使用者明確呼叫；Skills 依相關性自動載入或用 slash command 明確載入；Custom Agent 定義角色與工具；MCP 提供外部能力。Language Model、Hooks 與 Plugins 本次不列入實作範圍。參考 [VS Code customization concepts](https://code.visualstudio.com/docs/agents/concepts/customization)。
 
-本 Lab 的主線 instruction 是根目錄 AGENTS.md；.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
+本 Lab 的主線 instruction 是根目錄 AGENTS.md；.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。三個 Prompt File、Skill、Agent 與 MCP 都在學員操作後才建立；starter 本身不預先放入功能答案。
+
+本 Lab 的 Prompt File 不是逾期借閱的答案，而是可以接收不同需求的 reusable workflow。逾期借閱只作為第一次實作案例；學生也要用相同 Prompt 驗證會員續期或歸還流程等第二個需求。
+
+## 提示詞使用方式
+
+- 以 `/init`、`/create-prompt`、`/create-skill`、`/create-agent` 開頭的內容是 Chat 指令；請直接在 Chat 輸入。
+- `~~~text` 區塊是可以直接複製貼上的完整提示詞。若指令先開啟建立精靈，請在精靈詢問角色、內容或儲存位置時貼上對應提示詞。
+- Prompt File、Skill 與 Custom Agent 產生的內容是初稿；建立完成後，仍要按照文件中的 canonical frontmatter、檔案路徑、工具限制與流程逐項檢查。
+- 除非提示詞明確要求修改，分析與驗證提示詞都必須要求 Copilot 只讀取、不修改，且不得宣稱未實際觀察到的命令或工具結果。
 
 ## 前置需求
 
@@ -164,7 +173,9 @@ dotnet run --project src/Library.Console/Library.Console.csproj -- --reset-data
 確認以下路徑尚不存在：
 
 - AGENTS.md
-- .github/prompts/overdue-loan-review.prompt.md
+- .github/prompts/feature-plan.prompt.md
+- .github/prompts/test-gap.prompt.md
+- .github/prompts/review-change.prompt.md
 - .github/skills/dotnet-feature-development/SKILL.md
 - .github/agents/library-code-reviewer.agent.md
 - .vscode/mcp.json
@@ -228,6 +239,31 @@ git clean -n -- <confirmed-experiment-path>
 
 讓 Copilot 探索 repository 並產生 workspace guidance。若目前版本將檔案命名或儲存到其他支援位置，請保留有用內容並整理成 repository root 的 AGENTS.md；本 Lab 的 canonical 檔案就是 AGENTS.md。
 
+如果 `/init` 沒有產生檔案，或產生的檔案需要整理，請在同一個 Chat 貼上以下提示詞：
+
+~~~text
+請探索目前這個 .NET 8 C# Library Management repository 的 source、tests、docs、solution 與 project 結構，
+建立或整理 repository root 的 AGENTS.md。
+
+AGENTS.md 必須要求 Agent：
+- 先讀取相關 source、tests 與 docs，再回答問題；不可猜測 repository 結構。
+- 使用實際檔案路徑、型別、方法、測試或命令輸出作為證據。
+- 清楚區分觀察事實、合理推論與尚未驗證資訊。
+- 使用者只要求分析或說明時，不得修改檔案。
+- 提出 plan 時，先列 acceptance criteria、影響範圍、預計檔案、風險與未決定事項。
+- 不得捏造命令、測試、工具呼叫或文件來源。
+- 將 business rules 放在 Library.ApplicationCore，JSON persistence 放在 Library.Infrastructure，
+  input/output 與 flow coordination 放在 Library.Console。
+- 沿用現有 entities、services、interfaces、enums、repositories 與 factories，優先採用最小修改。
+- 不得在沒有具體需求時新增套件、修改 public interface、seed data 或無關功能。
+- 測試要涵蓋 success、rejection、boundary 與 no-side-effect paths。
+- 回報完成前，實際執行並觀察 dotnet build、dotnet test 與 git diff --check。
+- 沒有實際命令輸出時，不得宣稱驗證成功。
+
+只建立或整理 AGENTS.md，不要修改任何 source、test、seed data 或其他 documentation。
+完成後請列出實際讀取的檔案與建立的檔案，並標記任何未驗證資訊。
+~~~
+
 將內容整理成以下結構：
 
 ~~~markdown
@@ -285,7 +321,7 @@ git clean -n -- <confirmed-experiment-path>
 
 ---
 
-## Part 4：Prompt File——把固定分析任務變成 slash command（0:45–0:55）
+## Part 4：Prompt Files——把可重複任務變成 slash command（0:45–1:10）
 
 ### 前置條件
 
@@ -293,71 +329,171 @@ AGENTS.md 已可被發現，且尚未開始逾期功能實作。
 
 ### 操作步驟
 
-建立 Workspace Prompt File：
+建立三個 Workspace Prompt File。它們要描述可重複的任務，不要把逾期借閱的功能答案寫死在 Prompt 裡：
 
 1. 執行 Chat: Open Customizations。
 2. 開啟 Prompts 頁籤。
 3. 選擇 New Prompt → Workspace。
 4. 或執行 Chat: New Prompt File／create-prompt。
-5. 儲存為 .github/prompts/overdue-loan-review.prompt.md。
+5. 分別儲存為：
+   - `.github/prompts/feature-plan.prompt.md`
+   - `.github/prompts/test-gap.prompt.md`
+   - `.github/prompts/review-change.prompt.md`
 
-內容：
+如果使用 `/create-prompt` 產生初稿，請分別指定上述路徑與用途，或在新的 Chat 貼上以下提示詞一次建立三個檔案：
+
+~~~text
+請為目前這個 .NET 8 C# Library Management repository 建立三個 Workspace Prompt Files：
+
+- .github/prompts/feature-plan.prompt.md
+- .github/prompts/test-gap.prompt.md
+- .github/prompts/review-change.prompt.md
+
+它們必須是可套用到不同功能需求的 reusable workflow，不得把 overdue borrowing 的功能答案寫死在 Prompt 裡。
+
+feature-plan 的用途是：針對使用者提供的 feature request，建立 evidence-based implementation plan。
+test-gap 的用途是：將使用者提供的 feature request 對應到既有測試與缺少的測試案例。
+review-change 的用途是：唯讀檢查目前變更的需求、分層、測試、side effects 與驗證證據。
+
+三個 Prompt File 都必須使用 ask agent，且只讀取與搜尋，不得 edit、create、delete、format 或 execute。
+不要修改任何 source、test、seed data 或其他 documentation。
+~~~
+
+### `feature-plan.prompt.md`
 
 ~~~markdown
 ---
-name: overdue-loan-review
-description: Analyze the overdue borrowing requirement without editing files
-argument-hint: "[optional context]"
+name: feature-plan
+description: Create an evidence-based implementation plan for a feature request
+argument-hint: "[feature request]"
 agent: ask
 ---
 
-Analyze the request to prevent a patron with an overdue, unreturned loan from creating a new loan.
+請針對以下功能需求建立實作計畫：
 
-Read the relevant LoanService, entities, repositories, enum, Console flow, tests, and documentation.
-Return:
+${input:featureRequest}
 
-1. Acceptance criteria.
-2. Observed facts with file and symbol evidence.
-3. Reasonable inferences.
-4. Unverified information.
-5. A minimal file-level implementation plan.
-6. Tests for success, rejection, boundary, and no side effects.
+請先讀取相關的 source、tests、docs、interfaces 與現有 patterns。
 
-Do not edit, create, delete, format, or execute commands. Do not claim tests passed.
+輸出：
+
+1. Acceptance criteria
+2. 目前已存在的功能與檔案證據
+3. 需求與現況之間的缺口
+4. 影響的 project、檔案與 symbol
+5. ApplicationCore、Infrastructure、Console 的責任分配
+6. Success、rejection、boundary、no-side-effect 測試案例
+7. 風險與尚未確認事項
+
+只分析，不要修改檔案、建立檔案、執行命令或宣稱測試成功。
+~~~
+
+### `test-gap.prompt.md`
+
+~~~markdown
+---
+name: test-gap
+description: Map a feature request to existing and missing tests
+argument-hint: "[feature request]"
+agent: ask
+---
+
+功能需求：
+
+${input:featureRequest}
+
+請讀取相關 production code、既有測試、Factory 與文件，建立測試缺口分析。
+
+請輸出 Markdown table：
+
+| Acceptance criterion | Existing test | Missing scenario | Suggested test location |
+|---|---|---|---|
+
+至少檢查：
+
+- success path
+- rejection path
+- boundary condition
+- returned／inactive data
+- no-side-effect behavior
+- repository interaction
+- regression of existing rules
+
+只分析，不要修改檔案或執行命令。
+對無法由 repository 證實的內容標記為 UNVERIFIED。
+~~~
+
+### `review-change.prompt.md`
+
+~~~markdown
+---
+name: review-change
+description: Perform a read-only review of current changes
+argument-hint: "[review focus]"
+agent: ask
+---
+
+請唯讀 Review 目前的變更。
+
+Review focus：
+
+${input:reviewFocus}
+
+請檢查：
+
+- 需求與 acceptance criteria
+- 分層責任
+- 商業規則位置
+- 測試完整性
+- no-side-effect 與 partial update
+- public API、NuGet、seed data 與 unrelated changes
+- build、test、diff-check 的實際證據
+
+輸出：
+
+1. Verdict
+2. Findings table：severity、file evidence、rule violated、recommendation、blocking status
+3. 已驗證項目
+4. UNVERIFIED 項目
+5. Non-blocking follow-up
+
+只能讀取與搜尋，不得修改檔案。
 ~~~
 
 ### 驗證與觀察
 
-1. 在 Chat 輸入 /overdue-loan-review。
-2. 觀察它是否使用 ask，只回傳分析與計畫。
-3. 執行 Chat: Run Prompt，選同一個 Prompt File。
-4. 在 Prompt File editor 按 play，選目前 Chat 或新 Chat 執行。
-5. 確認它是手動呼叫，不會因一般問題自動執行。
+1. 在 Chat 輸入 `/feature-plan`，提供逾期借閱需求。
+2. 再以同一個 Prompt 提供會員續期或歸還流程需求，確認 Prompt 沒有綁定單一功能。
+3. 執行 `/test-gap`，確認輸出包含 success、rejection、boundary 與 no-side-effect。
+4. 執行 Chat: Run Prompt，或在 Prompt File editor 按 play，選目前 Chat 或新 Chat 執行。
+5. 確認三個 Prompt 都是手動呼叫，不會因一般問題自動執行，也沒有修改工作樹。
 
 Prompt Files 是可手動呼叫的 Markdown slash command；它和自動套用的 Instructions、可相關性載入的 Skill 不同。Agent Host 不使用傳統 Prompt Files 時，應改用 Skill；本 Lab 使用 VS Code local Chat 驗證。官方格式：[Prompt Files](https://code.visualstudio.com/docs/agent-customization/prompt-files)。
 
 ### 預期結果與檢查點
 
-- [ ] Prompt File 出現在 Workspace Prompts 清單。
-- [ ] /overdue-loan-review 能明確執行。
-- [ ] 回答只有分析、證據與 plan，沒有修改檔案。
-- [ ] Prompt File 不包含 API key、秘密或功能答案。
+- [ ] 三個 Prompt File 出現在 Workspace Prompts 清單。
+- [ ] `/feature-plan` 至少能套用到逾期借閱與另一個不同需求。
+- [ ] `/test-gap` 能列出既有測試、缺少情境與建議測試位置。
+- [ ] 三個 Prompt 的回答只有分析、證據與 plan，沒有修改檔案。
+- [ ] Prompt Files 不包含 API key、秘密或單一功能的完整答案。
 
 ---
 
-## Part 5：Agent Skill——封裝 .NET 功能開發流程（0:55–1:15）
+## Part 5：Agent Skill——封裝含資源的 .NET 功能開發流程（1:10–1:30）
 
 ### 前置條件
 
-AGENTS.md 與 Prompt File 已完成，尚未開始逾期功能實作。
+AGENTS.md 與三個 Prompt File 已完成，尚未開始逾期功能實作。
+
+三個 Prompt File 已經涵蓋單一、手動重複的分析任務。本 Part 只在需要跨多個步驟、並且要引用 `architecture.md` 與 `testing.md` 等資源時建立 Skill；不要只把較長的 Prompt 改名成 Skill。
 
 ### 設定與建立
 
-確認 VS Code settings：
+預設的 Workspace Skill 位置是 `.github/skills`。如果目前版本沒有自動發現 Skill，再檢查 `chat.agentSkillsLocations` 是否包含該目錄；不要把版本特定的設定視為本 Part 的唯一驗收條件。
 
 ~~~json
 {
-  "chat.useAgentSkills": true,
   "chat.agentSkillsLocations": {
     ".github/skills": true
   }
@@ -403,7 +539,7 @@ SKILL.md 的 frontmatter 必須包含：
 - 能匹配 .NET Library feature、Service、Repository、Console 與 tests 的 description
 - argument-hint: "[feature or change to implement]"
 - user-invocable: true
-- disable-model-invocation: false
+- disable-model-invocation: true
 
 Skill 流程必須是：
 1. 先閱讀 source、tests、docs 與現有 patterns。
@@ -445,7 +581,7 @@ description: >
   repositories, services, and tests while following repository conventions.
 argument-hint: "[feature or change to implement]"
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 ~~~
 
@@ -503,28 +639,42 @@ testing.md 必須描述：
 
 **C：明確觸發**
 
-在 Chat 輸入 /dotnet-feature-development，再貼上 B 的需求。這是穩定驗收方式。
+在 Chat 輸入 `/dotnet-feature-development`，再貼上以下完整提示詞。這是穩定驗收方式。
 
-自動語意載入只作觀察，不列為必然通過條件。記錄三次實驗是否載入 Skill、是否引用兩個 resource、是否列 plan、是否修改檔案。
+~~~text
+請分析「在建立借閱時加入逾期且未歸還的禁止規則」需要修改哪些層與測試。
+
+請明確載入並遵循 dotnet-feature-development Skill，讀取相關 source、tests、docs 與 Skill resources。
+只提出 acceptance criteria、影響範圍與最小 file-level implementation plan，不要修改任何檔案。
+請列出：
+1. ApplicationCore、Infrastructure、Console 各層的責任。
+2. 需要檢查的 LoanService、LoanCreationStatus、repository、Console flow 與測試檔案。
+3. success、rejection、boundary 與 no-side-effect 測試案例。
+4. 目前無法從 repository 證實的資訊，並標記為 UNVERIFIED。
+
+不要執行完整 feature workflow，不要宣稱 build、test 或 diff check 已成功。
+~~~
+
+本 Lab 將 Skill 設為明確呼叫，避免它與通用 Prompt File 重複載入。若課堂要觀察自動語意載入，可另以 `disable-model-invocation: false` 做延伸實驗，但不列為必要驗收條件。記錄是否引用兩個 resource、是否列 plan、是否修改檔案。
 
 官方說明：[Agent Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。
 
 ### 預期結果與檢查點
 
 - [ ] Skill 出現在 Workspace Skills 清單。
-- [ ] chat.useAgentSkills 與 .github/skills location 已設定。
+- [ ] `.github/skills` 被發現；若需額外設定，已記錄實際版本與設定名稱。
 - [ ] SKILL.md 的 name 與資料夾相同。
 - [ ] 內容包含 ./architecture.md 與 ./testing.md。
-- [ ] A、B 沒有修改程式；C 能明確載入完整 workflow。
+- [ ] A、B 沒有修改程式；C 能明確載入完整 workflow 與兩個 resource。
 - [ ] Diagnostics 沒有 Skill discovery error。
 
 ---
 
-## Part 6：Custom Agent——建立唯讀 Library Code Reviewer（1:25–1:40）
+## Part 6：Custom Agent——建立唯讀 Library Code Reviewer（1:30–1:45）
 
 ### 前置條件
 
-Instructions、Prompt File、Skill 已被發現；MCP 可以稍後加入，Reviewer 必須能在 MCP 不可用時標記未驗證。
+Instructions、三個 Prompt File 與 Skill 已被發現；MCP 可以稍後加入，Reviewer 必須能在 MCP 不可用時標記未驗證。
 
 ### 建立步驟
 
@@ -645,11 +795,11 @@ git diff --stat
 
 ---
 
-## Part 7：Microsoft Learn MCP——取得外部官方證據（1:40–1:55）
+## Part 7：選修 Microsoft Learn MCP——取得外部官方證據（1:45–2:00）
 
 ### 前置條件
 
-VS Code 支援 MCP，且網路可連線到 learn.microsoft.com。
+VS Code 支援 MCP，且網路可連線到 learn.microsoft.com。本 Part 是選修短實驗，不是逾期借閱功能實作或 Prompt File 驗收的必要條件。
 
 ### 建立設定
 
@@ -699,65 +849,76 @@ mkdir -p .vscode
 
 ---
 
-## Part 8：整合實作——逾期禁止新增借閱（1:55–2:35）
+## Part 8：整合實作——逾期禁止新增借閱（2:00–2:40）
 
 ### 前置條件與工作順序
 
 開啟新的 Chat session，依序確認：
 
 1. AGENTS.md 已被 Instructions diagnostics 發現。
-2. /overdue-loan-review 可分析但不修改。
-3. dotnet-feature-development 已明確或自動載入。
+2. `/feature-plan` 與 `/test-gap` 可分析但不修改。
+3. dotnet-feature-development 已明確載入；若未建立 Skill，使用一般 Agent 依照同一個 workflow 執行。
 4. 使用一般 Agent 實作，不要一開始選唯讀 Reviewer。
-5. MCP 只用來查證框架層建議；TimeProvider 是非阻擋 follow-up。
+5. MCP 若已完成，只用來查證框架層建議；TimeProvider 是非阻擋 follow-up。
 
-### 固定 Prompt
+### Baseline Prompt
 
-貼上與 Part 2 完全相同的文字：
+以下提示詞只用於 Before／After 比較；Part 2 與本 Part 的 baseline 必須使用完全相同的需求描述：
 
 ~~~text
 在建立借閱時，如果讀者有逾期且尚未歸還的借閱，必須拒絕新的借閱。
 請補上必要的程式碼、測試與驗證，並遵循現有專案架構。
 ~~~
 
-要求 Agent 依序執行：
+### Feature input 與 reusable implementation template
 
-1. 讀取 LoanService、LoanCreationStatus、repository、Console flow、CreateLoan tests 與 docs。
-2. 列出 acceptance criteria、影響範圍、分層 plan 與預計檔案，確認後才 edit。
-3. 做最小修改。
-4. 新增 success、rejection、boundary、no-side-effect tests。
-5. 執行並觀察 dotnet build、dotnet test、git diff --check。
-6. 檢查 diff，不得修改 seed data、NuGet、public interface 或 Console 商業規則。
-7. 保存 terminal output，再切換 Library Code Reviewer 唯讀 review。
+先執行 `/feature-plan`，輸入本次案例需求；確認 plan 後，再執行 `/test-gap` 檢查測試缺口。這兩個 Prompt 必須先完成唯讀分析，不能直接取代 plan confirmation。
 
-### 功能規格
-
-- ILoanService.CreateLoan(int patronId, int bookItemId) 與 repository contracts 不變。
-- LoanCreationStatus 新增 PatronHasOverdueLoan 與清楚描述。
-- 判斷順序：Patron 不存在 → 會員過期 → 五本上限 → 逾期未歸還 → BookItem 存在／可借 → 建立 Loan。
-- 逾期定義：ReturnDate == null && DueDate < DateTime.Now。
-- 已歸還逾期紀錄與未逾期 active loan 不阻擋。
-- 拒絕時不得查詢 GetBookItem、GetAvailableBookItems，不得呼叫 AddLoan，不得修改 Patron Loans。
-- Console 只使用 LoanCreationStatus 與 EnumHelper 顯示結果。
-
-### 測試與 Review
-
-至少涵蓋：
-
-- active overdue 回傳 PatronHasOverdueLoan。
-- returned overdue 可以建立借閱。
-- current active 可以建立借閱。
-- 拒絕時 no-side-effect 與 repository calls 驗證。
-- 會員過期與五本上限的既有優先順序不回歸。
-
-切換 Reviewer 後輸入：
+接著在一般 Agent Chat 使用以下 reusable implementation template。若不是從 Prompt File 執行，請將 `${input:featureRequest}` 與 `${input:acceptedPlan}` 替換成實際內容：
 
 ~~~text
-請 review 這次逾期借閱規則的變更。只讀取與搜尋，不要修改檔案。
-請對照 AGENTS.md、dotnet-feature-development Skill、需求順序、
-測試/no-side-effect、build/test/diff-check 實際證據輸出報告；
-查證框架建議時附 Microsoft Learn 來源。
+請在目前 .NET 8 C# Library Management repository 中完成以下功能需求：
+
+${input:featureRequest}
+
+以下是已確認的 acceptance criteria 與 implementation plan：
+
+${input:acceptedPlan}
+
+請依以下順序工作：
+1. 先讀取相關 source、tests、docs、interfaces 與現有 patterns。
+2. 如果目前工作樹或需求與 plan 衝突，先列出實際證據與選項，不要自行發明設計。
+3. 在修改前確認最小 file-level plan；確認後才 edit。
+4. 將 business rules 放在 Library.ApplicationCore，persistence 放在 Library.Infrastructure，input/output 與 flow coordination 放在 Library.Console。
+5. 沿用現有 entities、services、interfaces、enums、repositories 與 factories。
+6. 補上 success、rejection、boundary 與 no-side-effect tests。
+7. 執行並實際觀察 dotnet build、dotnet test 與 git diff --check。
+8. 檢查 diff，確認沒有修改 seed data、NuGet、public interface、Console 商業規則或無關功能。
+
+完成後回報修改檔案、測試案例、實際命令輸出與仍然 UNVERIFIED 的項目。
+沒有實際命令輸出時，不得宣稱 build、test 或 diff check 成功。
 ~~~
+
+### 本次案例的驗收條件
+
+以下內容是本次逾期借閱案例的需求輸入，不是 reusable Prompt File 的固定答案：
+
+- `ILoanService.CreateLoan(int patronId, int bookItemId)` 與既有 repository contracts 維持不變。
+- 讀者有逾期且尚未歸還的借閱時，新的借閱必須被拒絕，並顯示清楚一致的結果訊息。
+- 判斷順序維持：Patron 不存在 → 會員過期 → 五本未歸還借閱上限 → 逾期且未歸還 → BookItem 存在／可借 → 建立 Loan。
+- 逾期定義為 `ReturnDate == null && DueDate < DateTime.Now`。
+- 已歸還的逾期借閱與未逾期的 active loan 不得被逾期規則阻擋。
+- 逾期規則拒絕時，不得查詢 `GetBookItem` 或 `GetAvailableBookItems`，不得呼叫 `AddLoan`，也不得修改 Patron Loans。
+- Console 只能使用既有結果狀態與 `EnumHelper` 顯示結果，不得自行計算商業規則。
+
+### 操作順序
+
+1. 以 `/feature-plan` 分析逾期借閱需求。
+2. 以 `/test-gap` 對照既有 `CreateLoan` tests、Factory 與上述驗收條件。
+3. 確認 plan 後，使用一般 Agent 執行 reusable implementation template；若 Part 5 已完成，先明確載入 `dotnet-feature-development` Skill。
+4. 新增或補強 active overdue、returned overdue、current active、no-side-effect 與既有優先順序測試。
+5. 執行並保存 `dotnet build`、`dotnet test` 與 `git diff --check` 的實際輸出。
+6. 使用 `/review-change` 輸入「逾期借閱規則、分層、測試與驗證證據」，再切換 `Library Code Reviewer` 做唯讀 Review。
 
 ### 預期結果與檢查點
 
@@ -769,7 +930,7 @@ mkdir -p .vscode
 
 ---
 
-## Part 9：手動驗證、回顧與交付（2:35–3:00）
+## Part 9：手動驗證、回顧與交付（2:40–3:00）
 
 ### 前置條件
 
@@ -847,7 +1008,9 @@ git push -u origin lab/copilot-customization
 ### 完成條件
 
 - [ ] 37 baseline tests 未回歸，solution tests 全部通過。
-- [ ] 六種本 Lab 的 customization 都能被發現、執行或完成概念驗收。
+- [ ] AGENTS.md、三個 Prompt File、Skill 與 Custom Agent 都能被發現並完成必要驗收；MCP 若未完成，保留實際錯誤證據。
+- [ ] 同一個 `/feature-plan` 至少套用到逾期借閱與另一個不同功能需求。
+- [ ] `/test-gap` 能找出既有測試、缺少情境與建議測試位置。
 - [ ] Preview／policy 限制有實際錯誤或未完成紀錄。
 - [ ] Reviewer 前後工作樹不變。
 - [ ] 四個手動案例、runtime JSON、Before／After 表與 review 報告完成。
@@ -876,8 +1039,9 @@ git push -u origin lab/copilot-customization
 
 - Prompt File 必須是 .github/prompts/*.prompt.md。
 - Skill 必須是 .github/skills/<name>/SKILL.md，frontmatter name 必須與資料夾一致。
-- 確認 chat.useAgentSkills 為 true、chat.agentSkillsLocations 包含 .github/skills。
-- /skills 只是 Configure Skills；用 /dotnet-feature-development 驗證實際觸發。
+- 確認 `.github/skills` 位於預設 Workspace Skill 位置；若使用額外位置，再檢查 `chat.agentSkillsLocations`。
+- `/skills` 只是 Configure Skills；用 `/dotnet-feature-development` 驗證實際觸發。
+- Prompt Files 應分別以 `/feature-plan`、`/test-gap` 與 `/review-change` 驗證。
 - Prompt File 是手動 slash command；自動語意觸發不是必要驗收。
 
 ### MCP 無法啟動
