@@ -628,6 +628,8 @@ mkdir -p .vscode
 
 ## Part 9：Hooks 與 Plugins（2:05–2:20）
 
+### 操作步驟
+
 ### A. Hooks：安全的 lifecycle 觀察
 
 Agent Hooks 目前是 Preview。使用 Chat: Configure Hooks、/create-hook 或 Customizations editor 建立 Workspace hook：
@@ -759,6 +761,12 @@ Agent Hooks 目前是 Preview。使用 Chat: Configure Hooks、/create-hook 或 
 ---
 
 ## Part 11：手動驗證、回顧與交付（2:50–3:00）
+
+### 前置條件
+
+Part 10 的程式實作、測試與唯讀 Review 已完成；你知道 runtime data path，且每個手動案例都可以重新 reset。
+
+### 操作步驟
 
 ### 手動驗證
 
