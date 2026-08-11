@@ -47,7 +47,7 @@ Plugin             將多種 customization 打包、安裝與分享
 
 Instructions 會自動套用；Prompt Files 由使用者明確呼叫；Skills 依相關性自動載入或用 slash command 明確載入；Custom Agent 定義角色與工具；Language Model 決定推理能力；MCP 提供外部能力；Hooks 執行可預期的命令；Plugin 是發佈與安裝的包裝層。參考 [VS Code customization concepts](https://code.visualstudio.com/docs/agents/concepts/customization)。
 
-本 Lab 的主線 instruction 是根目錄 AGENTS.md。github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent、Hook 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
+本 Lab 的主線 instruction 是根目錄 AGENTS.md。.github/copilot-instructions.md 只在比較段落中提到，不需要建立兩份 Always-on instruction。Prompt File、Skill、Agent、Hook 與 MCP 在學員操作後才建立；starter 本身不預先放入功能答案。
 
 ## 前置需求
 
@@ -284,7 +284,7 @@ git clean -n -- <confirmed-experiment-path>
 
 5. 檢查回答是否引用實際檔案並區分事實／推論，且 git status --short 沒有程式修改。
 
-github/copilot-instructions.md 是另一種 workspace-wide instruction 位置；本 Lab 不同時建立兩份，以免學員無法判斷規則來源。References 的呈現依 Chat UI 版本而異，不是唯一驗收證據。
+.github/copilot-instructions.md 是另一種 workspace-wide instruction 位置；本 Lab 不同時建立兩份，以免學員無法判斷規則來源。References 的呈現依 Chat UI 版本而異，不是唯一驗收證據。
 
 ### 預期結果與檢查點
 
@@ -857,7 +857,7 @@ git push -u origin lab/copilot-customization
 - 確認檔案位於 repository root，名稱大小寫正確。
 - 重新開啟 Chat 或執行 Developer: Reload Window。
 - 確認使用的是 Chat／Agent request，不是 inline completion；inline suggestions 不會套用 custom instructions。
-- 不要同時建立另一份 github/copilot-instructions.md 造成來源混淆。
+- 不要同時建立另一份 .github/copilot-instructions.md 造成來源混淆。
 
 ### Prompt File 或 Skill 沒有出現
 
