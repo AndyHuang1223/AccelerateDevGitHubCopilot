@@ -8,7 +8,7 @@ description: >
   flows, or related tests.
 argument-hint: "[feature or change to implement]"
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # .NET Feature Development

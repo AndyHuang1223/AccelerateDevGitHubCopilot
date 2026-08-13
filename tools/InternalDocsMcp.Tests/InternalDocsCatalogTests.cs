@@ -1,4 +1,6 @@
 using InternalDocsMcp;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 using Xunit;
 
 namespace InternalDocsMcp.Tests;
@@ -55,6 +57,70 @@ public sealed class InternalDocsCatalogTests
         Assert.Null(catalog.GetDocument("secret.txt"));
         Assert.Null(catalog.GetDocument("../doc.md"));
         Assert.Null(catalog.GetDocument(Path.Combine(fixture.Root, "doc.md")));
+    }
+
+    [Fact]
+    public void ListAndGet_RejectSymlinkOutsideRoot()
+    {
+        using var fixture = new DocsFixture();
+        fixture.Write("safe.md", "safe");
+        var outside = Path.Combine(Path.GetTempPath(), $"outside-{Guid.NewGuid():N}.md");
+        File.WriteAllText(outside, "outside");
+
+        try
+        {
+            Directory.CreateDirectory(fixture.Root);
+            File.CreateSymbolicLink(Path.Combine(fixture.Root, "outside.md"), outside);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            File.Delete(outside);
+            return;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            File.Delete(outside);
+            return;
+        }
+
+        try
+        {
+            var catalog = new InternalDocsCatalog(fixture.Root);
+            Assert.Equal(["safe.md"], catalog.ListDocuments());
+            Assert.Null(catalog.GetDocument("outside.md"));
+        }
+        finally
+        {
+            File.Delete(outside);
+        }
+    }
+
+    [Fact]
+    public async Task StdioServer_ExposesTheThreeReadOnlyTools()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
+        var serverPath = Path.Combine(repoRoot, "tools", "InternalDocsMcp", "bin", "Debug", "net8.0", "InternalDocsMcp.dll");
+        var docsRoot = Path.Combine(repoRoot, "training", "internal-docs");
+        var transport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "Internal Docs Test Server",
+            Command = "dotnet",
+            Arguments = [serverPath, docsRoot]
+        });
+
+        await using var client = await McpClient.CreateAsync(transport);
+        var tools = await client.ListToolsAsync();
+
+        Assert.Equal(
+            ["get_document", "list_documents", "search_docs"],
+            tools.Select(tool => tool.Name).OrderBy(name => name, StringComparer.Ordinal));
+
+        var result = await client.CallToolAsync(
+            "search_docs",
+            new Dictionary<string, object?> { ["query"] = "ProblemDetails" },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Contains(result.Content.OfType<TextContentBlock>(), block => block.Text.Contains("api-guidelines.md", StringComparison.Ordinal));
     }
 
     private sealed class DocsFixture : IDisposable
