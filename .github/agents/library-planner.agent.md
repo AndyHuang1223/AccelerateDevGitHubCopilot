@@ -27,4 +27,3 @@ Return:
 6. Risks, unresolved decisions, and UNVERIFIED items.
 
 Do not edit, create, delete, format, execute commands, or claim unobserved build/test results. The Start Implementation handoff is deliberately send: false so a person reviews and approves the plan first.
-

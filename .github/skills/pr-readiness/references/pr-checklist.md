@@ -6,4 +6,3 @@
 - [ ] Runtime data is not staged.
 - [ ] No API key, token, or personal editor setting is included.
 - [ ] Reviewer findings are actionable and blocking status is explicit.
-

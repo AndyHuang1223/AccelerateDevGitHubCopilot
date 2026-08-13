@@ -18,4 +18,3 @@ Use this skill for a structured, read-only review.
 6. Mark command output that is unavailable as UNVERIFIED.
 
 Do not edit files, stage or commit changes, run arbitrary commands, or claim unobserved results.
-

@@ -28,4 +28,3 @@ ${input:featureRequest}
 
 只分析，不要修改檔案或執行命令。
 對無法由 repository 證實的內容標記為 UNVERIFIED。
-

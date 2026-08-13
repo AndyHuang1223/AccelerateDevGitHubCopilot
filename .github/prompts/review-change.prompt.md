@@ -30,4 +30,3 @@ ${input:reviewFocus}
 5. Non-blocking follow-up
 
 只能讀取與搜尋，不得修改檔案。
-

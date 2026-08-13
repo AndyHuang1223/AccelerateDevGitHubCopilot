@@ -6,4 +6,3 @@
 - Build, tests, and git diff --check have observed successful output.
 - No unrelated files, secrets, seed-data changes, or unexplained public API/package changes remain.
 - Documentation and configuration changes are explained.
-

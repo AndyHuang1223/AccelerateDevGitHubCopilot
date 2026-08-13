@@ -17,4 +17,3 @@ Use this skill when a person wants a commit-message suggestion from staged chang
 5. Return one or more suggested messages and explain any split between feature, test, and docs concerns.
 
 Never run `git commit`, stage files, edit files, or push. If there is no staged diff, report that a message cannot be reliably suggested.
-

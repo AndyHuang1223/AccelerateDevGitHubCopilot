@@ -18,4 +18,3 @@ Use this skill as a quality gate after implementation and before review.
 6. Output Risk, evidence, blocking findings, and a final READY or NOT READY verdict.
 
 A failed command, missing evidence, or unresolved blocking finding means NOT READY. Never commit, push, merge, deploy, edit files, or claim a result that was not observed.
-

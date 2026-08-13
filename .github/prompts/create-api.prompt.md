@@ -25,4 +25,3 @@ ${input:apiRequirement:Expose the existing Library domain capabilities through a
 - 預計新增／修改檔案、依賴方向、風險、未決事項與驗收條件。
 
 只分析，不建立 `src/Library.Api`，不執行命令，不宣稱未觀察到的結果。
-

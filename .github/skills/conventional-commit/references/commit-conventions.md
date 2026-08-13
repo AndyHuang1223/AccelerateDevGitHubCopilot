@@ -9,4 +9,3 @@ Use Conventional Commits:
 - `refactor(scope):` for behavior-preserving structure changes.
 - Keep the subject imperative, concise, and specific.
 - Split mixed concerns only when the staged diff can be separated safely; do not perform the split automatically.
-
