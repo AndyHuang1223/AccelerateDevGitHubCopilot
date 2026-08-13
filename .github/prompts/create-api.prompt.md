@@ -7,6 +7,7 @@ tools:
   - read
   - search
   - microsoftLearn/*
+  - internalDocs/*
 ---
 
 目前 repository 是 .NET 8 Library Console application，沒有 Web API。

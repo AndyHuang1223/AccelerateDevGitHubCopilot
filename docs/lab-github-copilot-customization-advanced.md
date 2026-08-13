@@ -191,6 +191,11 @@ Expose exactly three read-only tools：
 
 新增 `.github/prompts/create-api.prompt.md`，使用 `agent: Library Planner`，並要求：
 
+這個 Prompt File 的 `tools` 必須明確列出 `internalDocs/*` 與 `microsoftLearn/*`。Prompt
+File 的工具清單優先於 referenced custom agent，因此核心 Lab 的 Planner 仍然維持
+read/search/Microsoft Learn-only；只有這個進階 API planning prompt 額外開放唯讀
+Internal Docs MCP。
+
 ~~~text
 目前 repository 是 .NET 8 Library Console application，沒有 Web API。
 請只產生 Library.Api 的架構與實作計畫，不建立 project、不修改 source/test。
@@ -226,4 +231,3 @@ rg -n 'list_documents|search_docs|get_document|microsoftLearn|internalDocs' .vsc
 ~~~
 
 完成條件：三個 Skill 均可被發現且不會自動 commit；MCP tools 只讀取 allow-listed Markdown；Planner 只產生 API plan；沒有 `Library.Api` project、endpoint、secret 或 production code 變更。
-
