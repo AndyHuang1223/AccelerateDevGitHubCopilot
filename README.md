@@ -64,6 +64,16 @@ dotnet run --project src/Library.Console/Library.Console.csproj
 dotnet test tests/UnitTests/UnitTests.csproj
 ```
 
+## GitHub Copilot Customization Labs
+
+核心 3 小時 Lab 位於 [`docs/lab-github-copilot-customization.md`](docs/lab-github-copilot-customization.md)，
+會從 AGENTS.md、Prompt Files、Agent Skills、Custom Agents 與 Microsoft Learn MCP，
+一路完成 Planner → Implementation → Reviewer 的逾期借閱案例。
+
+完成核心 Lab 後，再進入 [`docs/lab-github-copilot-customization-advanced.md`](docs/lab-github-copilot-customization-advanced.md)：
+它以三階 Skills、可執行的 Internal Docs MCP 與 `Library.Api` 架構規劃，練習把個人方法
+提升為可治理的團隊能力。進階 Lab 只產生 API plan，不會新增 Web API project 或 endpoint。
+
 ## Solution 結構
 
 ```text

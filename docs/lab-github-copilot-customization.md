@@ -670,7 +670,7 @@ testing.md 必須描述：
 
 ---
 
-## Part 6：Custom Agent——建立唯讀 Library Code Reviewer（1:30–1:45）
+## Part 6：Custom Agents——Planner → Implementation → Reviewer（1:30–1:50）
 
 ### 前置條件
 
@@ -795,7 +795,88 @@ git diff --stat
 
 ---
 
-## Part 7：選修 Microsoft Learn MCP——取得外部官方證據（1:45–2:00）
+### Part 6A：新增 Planner 與 Implementation Agent
+
+既有的唯讀 Reviewer 仍然保留，但整合實作前還需要兩個責任不同的角色。
+請用同一個 `/create-agent` 流程建立下列 Workspace agents：
+
+`.github/agents/library-planner.agent.md`
+
+~~~text
+請建立 Workspace Custom Agent「Library Planner」，儲存到
+.github/agents/library-planner.agent.md。
+
+這個 Agent 只負責研究與規劃，只能使用 read、search、microsoftLearn/*，不得 edit、
+create、delete、format、execute 或 terminal。請先讀取 repository、AGENTS.md、相關
+source、tests 與 docs，再輸出 acceptance criteria、檔案證據、最小 file-level plan、
+success/rejection/boundary/no-side-effect 測試、風險與未決事項。不可修改檔案、執行
+build/test 或宣稱未觀察到的結果。使用 MCP 時列出官方標題與連結。
+
+請在 frontmatter 加入 handoff：label 為 Start Implementation、agent 為
+Library Implementer、prompt 為「Implement the approved plan above. Re-check the
+repository before editing.」、send 為 false。
+~~~
+
+`.github/agents/library-implementer.agent.md`
+
+~~~text
+請建立 Workspace Custom Agent「Library Implementer」，儲存到
+.github/agents/library-implementer.agent.md。
+
+這個 Agent 可以使用 read、search、edit、execute，但不得部署或修改 production
+environment。它只能依照使用者確認的 implementation plan 工作：重新探索相關檔案、
+做最小修改、補上 tests，實際執行 dotnet build、dotnet test 與 git diff --check，
+最後回報檔案、測試、實際輸出與 UNVERIFIED 項目。商業規則放在 ApplicationCore，
+persistence 放在 Infrastructure，Console 只負責 input/output 與 flow coordination；
+不得新增 NuGet、public interface、seed data 或無關重構。
+
+請在 frontmatter 加入 handoff：label 為 Review Changes、agent 為 Library Code
+Reviewer、prompt 為「Review the implementation above as a read-only reviewer. Mark
+missing command output UNVERIFIED.」、send 為 false。
+~~~
+
+Canonical frontmatter（工具名稱以目前 VS Code 版本可用清單為準）：
+
+~~~yaml
+---
+name: Library Planner
+description: Plan .NET library features from repository evidence and official guidance.
+tools:
+  - read
+  - search
+  - microsoftLearn/*
+handoffs:
+  - label: Start Implementation
+    agent: Library Implementer
+    prompt: Implement the approved plan above. Re-check the repository before editing.
+    send: false
+---
+~~~
+
+~~~yaml
+---
+name: Library Implementer
+description: Implement an approved .NET library change with tests and observed verification evidence.
+tools:
+  - read
+  - search
+  - edit
+  - execute
+handoffs:
+  - label: Review Changes
+    agent: Library Code Reviewer
+    prompt: Review the implementation above as a read-only reviewer. Mark missing command output UNVERIFIED.
+    send: false
+---
+~~~
+
+Planner 完成後先由人員檢查 plan，再按 `Start Implementation`；Implementer 完成後
+再按 `Review Changes`。`send: false` 是刻意保留人工核准點，不可改成自動送出。
+Reviewer 不得執行命令；它只能檢查 Implementer 提供的 terminal evidence，缺少的輸出
+必須標為 `UNVERIFIED`。驗收時分別比較 Planner／Reviewer 前後的
+`git status --short` 與 `git diff --stat`，兩者都必須一致。
+
+## Part 7：選修 Microsoft Learn MCP——取得外部官方證據（1:50–2:05）
 
 ### 前置條件
 
@@ -849,7 +930,7 @@ mkdir -p .vscode
 
 ---
 
-## Part 8：整合實作——逾期禁止新增借閱（2:00–2:40）
+## Part 8：整合實作——逾期禁止新增借閱（2:05–2:45）
 
 ### 前置條件與工作順序
 
@@ -857,8 +938,8 @@ mkdir -p .vscode
 
 1. AGENTS.md 已被 Instructions diagnostics 發現。
 2. `/feature-plan` 與 `/test-gap` 可分析但不修改。
-3. dotnet-feature-development 已明確載入；若未建立 Skill，使用一般 Agent 依照同一個 workflow 執行。
-4. 使用一般 Agent 實作，不要一開始選唯讀 Reviewer。
+3. `dotnet-feature-development` 已明確載入；若未建立 Skill，使用一般 Agent 依照同一個 workflow 執行。
+4. Planner、Implementer、Reviewer 三個 agents 已被發現，且 handoff 的 `send` 是 false。
 5. MCP 若已完成，只用來查證框架層建議；TimeProvider 是非阻擋 follow-up。
 
 ### Baseline Prompt
@@ -913,12 +994,12 @@ ${input:acceptedPlan}
 
 ### 操作順序
 
-1. 以 `/feature-plan` 分析逾期借閱需求。
-2. 以 `/test-gap` 對照既有 `CreateLoan` tests、Factory 與上述驗收條件。
-3. 確認 plan 後，使用一般 Agent 執行 reusable implementation template；若 Part 5 已完成，先明確載入 `dotnet-feature-development` Skill。
-4. 新增或補強 active overdue、returned overdue、current active、no-side-effect 與既有優先順序測試。
-5. 執行並保存 `dotnet build`、`dotnet test` 與 `git diff --check` 的實際輸出。
-6. 使用 `/review-change` 輸入「逾期借閱規則、分層、測試與驗證證據」，再切換 `Library Code Reviewer` 做唯讀 Review。
+1. 以 `/feature-plan` 分析逾期借閱需求，並以 `/test-gap` 對照既有 `CreateLoan` tests、Factory 與上述驗收條件。
+2. 切換 `Library Planner`，確認它列出 acceptance criteria、影響檔案、測試與未決事項；也可以使用 `/review-change` 先做 ask-only 交叉檢查。
+3. 人工檢查 plan 後，按 `Start Implementation`；若 handoff 不可用，將相同已核准 plan 貼給 `Library Implementer`。
+4. Implementer 新增或補強 active overdue、returned overdue、current active、no-side-effect 與既有優先順序測試，並實際執行 build、test、diff-check。
+5. 檢查 Implementer 的檔案 diff 與命令輸出後，按 `Review Changes`，再由 `Library Code Reviewer` 做唯讀 Review。
+6. Reviewer 不得執行命令；它必須把看不到的 build/test/diff 輸出標成 `UNVERIFIED`，並且前後工作樹不變。
 
 ### 預期結果與檢查點
 
