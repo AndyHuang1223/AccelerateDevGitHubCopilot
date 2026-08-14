@@ -77,6 +77,11 @@ public sealed class InternalDocsCatalogTests
             File.Delete(outside);
             return;
         }
+        catch (IOException ex) when (OperatingSystem.IsWindows() && ex.HResult == unchecked((int)0x80070522))
+        {
+            File.Delete(outside);
+            return;
+        }
         catch (PlatformNotSupportedException)
         {
             File.Delete(outside);
