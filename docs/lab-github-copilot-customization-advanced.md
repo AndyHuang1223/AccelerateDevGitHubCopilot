@@ -187,6 +187,30 @@ Expose exactly three read-only tools：
 
 執行 MCP: List Servers，確認 trust、server output 與 Configure Tools。先呼叫 `list_documents`，再測試一個 `search_docs` 與 `get_document`。若 stdio server 啟動失敗，保留完整 output，並將 MCP 部分標成 `UNVERIFIED`；不可把模型記憶當作 tool call 證據。
 
+### B4. Visual Studio configuration
+
+`./mcp.json` 內註冊本機 server：
+
+~~~json
+{
+  "inputs": [],
+  "servers": {
+    "internalDocs": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        ".\\tools\\InternalDocsMcp\\InternalDocsMcp.csproj",
+        "--",
+        ".\\training\\internal-docs"
+      ],
+      "env": {}
+    }
+  }
+}
+~~~
+
 ## Part C：API Planning Capstone
 
 新增 `.github/prompts/create-api.prompt.md`，使用 `agent: Library Planner`，並要求：
@@ -226,4 +250,3 @@ rg -n 'list_documents|search_docs|get_document|microsoftLearn|internalDocs' .vsc
 ~~~
 
 完成條件：三個 Skill 均可被發現且不會自動 commit；MCP tools 只讀取 allow-listed Markdown；Planner 只產生 API plan；沒有 `Library.Api` project、endpoint、secret 或 production code 變更。
-
