@@ -14,9 +14,10 @@
 
 1. 使用 Chat: Open Customizations 管理 User／Workspace customization。
 2. 用 /init 建立通用 AGENTS.md，讓 Agent 回答與實作遵循 repository 慣例。
-3. 建立可套用到不同需求的 Feature Plan、Test Gap 與 Review Prompt File。
-4. 用 Agent Skill、Custom Agent 與選修 MCP 延伸多步驟流程、角色權限與外部證據。
-5. 用相同需求比較沒有 customization 與完整 customization 的差異。
+3. 從實際 session 的摩擦紀錄持續優化 AGENTS.md，而不是把它當成一次性產出。
+4. 建立可套用到不同需求的 Feature Plan、Test Gap 與 Review Prompt File。
+5. 用 Agent Skill、Custom Agent 與選修 MCP 延伸多步驟流程、角色權限與外部證據。
+6. 用相同需求比較沒有 customization 與完整 customization 的差異。
 
 ## 課堂主線
 
@@ -238,6 +239,8 @@ git clean -n -- <confirmed-experiment-path>
 ~~~
 
 讓 Copilot 探索 repository 並產生 workspace guidance。若目前版本將檔案命名或儲存到其他支援位置，請保留有用內容並整理成 repository root 的 AGENTS.md；本 Lab 的 canonical 檔案就是 AGENTS.md。
+
+`/init` 只建立第一版 baseline，不代表 instructions 已經完成。後續要根據實際開發中的錯誤、重試、使用者糾正與驗證結果，持續檢查並改善 AGENTS.md；Part 9 會用 `/chronicle improve` 示範這個 feedback loop。
 
 如果 `/init` 沒有產生檔案，或產生的檔案需要整理，請在同一個 Chat 貼上以下提示詞：
 
@@ -1049,6 +1052,55 @@ dotnet run --project src/Library.Console/Library.Console.csproj -- --reset-data
 | 可重複流程 | | |
 | Reviewer 可追溯性 | | |
 | MCP 官方來源 | | |
+
+### 選修延伸：從 Agent 摩擦持續優化 AGENTS.md（10–15 分鐘，不計入核心 3 小時）
+
+前面的 `/init`、Before／After 實驗與整合實作，會留下 Agent 探索不足、重複失敗、需要追問或被人工糾正的紀錄。這些紀錄不是課堂垃圾，而是下一版 AGENTS.md 的候選證據。目標不是讓 instructions 越寫越長，而是把反覆發生且值得長期保留的 repository knowledge 固化下來。
+
+#### 操作步驟
+
+1. 保留 Part 2、Part 8 與本 Part 的摩擦證據，例如錯誤命令、重複失敗、修改錯誤分層、漏測試或沒有實際命令輸出。
+2. 在目前 workspace 的 GitHub Copilot Chat 輸入：
+
+~~~text
+/chronicle improve
+~~~
+
+3. 檢查它找到的 repeated test failures、build errors、使用者糾正與跨 session 重複模式。Slash commands 會依產品、版本、帳號與目前 Chat context 而異；如果 `/chronicle improve` 不在清單中，保留版本或 policy 限制的實際證據。
+4. 不要直接接受預設建議。逐項判斷是否同時符合「有實際證據」、「可長期重用」、「具體可執行」與「能在後續 Chat 驗證」四個條件。
+5. 將採用的規則人工整理進本 Lab 的 canonical `AGENTS.md`，並避免重複既有規則或加入互相衝突的 instructions。
+6. 開啟新的 Chat，透過 Chat: Open Customizations、Chat Diagnostics 或 Developer: Open Agent Debug Panel 確認 AGENTS.md 仍被發現，再重跑一個曾經需要糾正的情境。
+
+`/chronicle improve` 的套用行為可能依環境而異，請依實際 diff 處理：
+
+- 只顯示建議時：記錄建議，人工把採用項目整理進 AGENTS.md。
+- 建立或更新 `.github/copilot-instructions.md` 時：先檢查 diff，再將採用項目移植到 AGENTS.md；確認內容已移植後，移除本次工具產生的檔案，維持單一 canonical instruction。
+- 直接修改 AGENTS.md 時：逐項 review，只保留有證據且通過篩選的規則。
+
+最終不得同時留下內容重複或互相衝突的兩份 workspace-wide instructions。不要把一次性功能答案、暫時錯誤、個人偏好、秘密、泛泛而談或既有規則的重複內容寫入 AGENTS.md。保留的規則應聚焦於正確命令、架構邊界、測試慣例、驗證要求與反覆踩到的 repository 陷阱。
+
+#### 改善紀錄
+
+| 摩擦現象 | 實際 session／操作證據 | Chronicle 建議 | 採用／拒絕理由 | AGENTS.md 最終規則 | 重測結果 |
+|---|---|---|---|---|---|
+| | | | | | |
+| | | | | | |
+| | | | | | |
+
+#### 預期結果與 fallback
+
+- [ ] 學員能說明 `/init` 是初始化，`/chronicle improve` 是根據使用回饋提出改善建議的機制。
+- [ ] 每項新增規則都能追溯到 session、Before／After 結果或實際修正。
+- [ ] 至少用新的 Chat 重測一個曾經需要糾正的情境，並記錄結果；沒有實際結果時標記 `UNVERIFIED`。
+- [ ] 最終以 AGENTS.md 為唯一 canonical instruction，沒有重複或衝突的 workspace-wide instructions。
+
+如果學員環境沒有 `/chronicle improve`，不要把模型記憶當成成功證據。記錄 slash command 不可用的版本或 policy 限制，將該步驟標記 `UNVERIFIED`，再用 Before／After 表與人工糾正紀錄完成同樣的 retrospective：挑出一個反覆摩擦、提出一條具體規則、人工整理進 AGENTS.md，並在新 Chat 重測。
+
+官方參考：
+
+- [GitHub Copilot Chat cheat sheet](https://docs.github.com/en/copilot/reference/chat-cheat-sheet?tool=vscode)：確認目前環境可用的 slash commands；可用清單會依環境與 context 改變。
+- [Using GitHub Copilot CLI session data](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/chronicle)：了解 `/chronicle improve` 如何從 session history 找出 friction signals 並提出 instructions 建議。
+- [Optimizing your AI usage](https://docs.github.com/en/copilot/tutorials/optimize-ai-usage)：說明要將實際觀察到的 recurring pattern 固化為具體、精簡且持續維護的 instructions。
 
 ### Decision matrix
 
