@@ -1,0 +1,17 @@
+{
+  "inputs": [],
+  "servers": {
+    "internalDocs": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        ".\\tools\\InternalDocsMcp\\InternalDocsMcp.csproj",
+        "--",
+        ".\\training\\internal-docs"
+      ],
+      "env": {}
+    }
+  }
+}
